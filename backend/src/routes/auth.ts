@@ -26,7 +26,8 @@ router.post('/login', async (req, res) => {
   if (!username || !password) {
     return res.status(400).send('Missing credentials');
   }
-  const secret = process.env.JWT_SECRET || 'dev-secret';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) { return res.status(500).send('Server misconfigured'); }
 
   try {
     const r = await pool.query('SELECT user_id, username, password FROM users WHERE username=$1 LIMIT 1', [username]);

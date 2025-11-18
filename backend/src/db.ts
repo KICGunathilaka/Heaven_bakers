@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
 
-const url = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/Heaven_Bakers';
+const url = process.env.DATABASE_URL;
+if (!url) throw new Error('DATABASE_URL is required');
 export const pool = new Pool({ connectionString: url });
