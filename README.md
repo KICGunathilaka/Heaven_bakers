@@ -1,68 +1,64 @@
-# Heaven Bakers App — Setup and Run
+# Heaven Bakers — Run Guide
 
-This project includes a React Vite + TypeScript frontend and a Node + TypeScript backend with PostgreSQL.
+This project contains a React frontend (Vite) and a Node.js/Express backend with PostgreSQL. Follow these steps to run the app after cloning the repository.
 
 ## Prerequisites
-- Node.js (18+ recommended)
-- npm
-- PostgreSQL (running locally)
+- Node.js 18+ and npm
+- PostgreSQL 13+ running locally
 
-## Database
-- Name: `Heaven_Bakers`
-- User: `postgres`
-- Password: `postgres`
-- Port: `5432`
+## 1) Clone the repo
+```bash
+git clone <your-repo-url>
+cd Heaven_Bakers
+```
 
-The backend connects by default to:
-```
-postgres://postgres:postgres@localhost:5432/Heaven_Bakers
-```
-On startup, the backend will:
-- Create the database if missing (requires your `postgres` user to have CREATE DATABASE privileges)
-- Create table `users (user_id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL, password TEXT NOT NULL)`
-- Seed an admin user with hashed password (`admin` / `admin123`)
-
-## Backend (Node on TypeScript entry)
-```
+## 2) Backend setup
+```bash
 cd backend
 npm install
+```
+
+Create a `.env` file in `backend` (optional but recommended):
+```env
+# Server
+PORT=5000
+# Database connection string
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/Heaven_Bakers
+# JWT signing secret
+JWT_SECRET=dev-secret
+```
+Notes:
+- If you skip `.env`, the backend defaults to `PORT=5000`, `DATABASE_URL=postgres://postgres:postgres@localhost:5432/Heaven_Bakers`, and `JWT_SECRET=dev-secret`.
+- On first start, the backend will auto-create required tables and seed an admin user (`admin` / `admin123`).
+
+Start the backend:
+```bash
 npm start
 ```
-- Starts `node -r ts-node/register index.ts`
-- API base: `http://localhost:5000/`
-- Login endpoint: `POST /api/auth/login` with JSON `{ "username": "admin", "password": "admin123" }`
+The server listens on `http://localhost:5000`.
 
-If you prefer not to use npm scripts, you can run directly:
-```
-cd backend
-node -r ts-node/register index.ts
-```
-
-## Frontend (Vite dev server)
-```
+## 3) Frontend setup
+Open a new terminal:
+```bash
 cd frontend
 npm install
 npm run dev
 ```
-- Opens `http://localhost:5173/`
-- Login with `admin/admin123`, redirects to Dashboard.
+The app runs on `http://localhost:5173`.
 
-## Proxy
-The frontend proxies `/api` to `http://localhost:5000` via `frontend/vite.config.ts`, so frontend requests use `/api/...`.
+The frontend is configured to proxy API calls to the backend at `/api` via `vite.config.ts`.
 
-## Environment Variables (optional)
-Create `backend/.env` if you want to override defaults:
-```
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/Heaven_Bakers
-JWT_SECRET=replace-with-strong-secret
-PORT=5000
-```
+## 4) Login
+- Username: `admin`
+- Password: `admin123`
+
+## Useful scripts
+- Backend: `npm start` — run server
+- Frontend: `npm run dev` — run Vite dev server
+- Frontend: `npm run build` — production build
+- Frontend: `npm run preview` — preview the build
 
 ## Troubleshooting
-- If the editor shows TypeScript module not found errors, restart the TypeScript server or reload the window.
-- If database creation fails, ensure your `postgres` user has privileges, or create `Heaven_Bakers` manually.
-- If you want to run without `tsconfig.json`, set:
-```
-set NODE_OPTIONS=-r ts-node/register
-node index.ts
-```
+- Ensure PostgreSQL is running and accessible at the `DATABASE_URL` you set.
+- If the database does not exist, the backend will attempt to create it automatically using your connection settings.
+- If login fails, stop and restart the backend to re-run the admin seed.
