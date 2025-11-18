@@ -13,7 +13,7 @@ CREATE TABLE users (
 CREATE TABLE products (
     product_id SERIAL PRIMARY KEY,
     product_name VARCHAR(200) NOT NULL,
-    sku VARCHAR(100) UNIQUE,
+    sku VARCHAR(100),
     category VARCHAR(100)
 );
 
