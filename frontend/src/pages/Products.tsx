@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { post, get } from '../services/api';
 
@@ -12,7 +12,9 @@ export default function Products() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [items, setItems] = useState<Array<{ product_id: number; product_name: string; sku: string | null; category: string | null }>>([]);
   const [barcodeProductId, setBarcodeProductId] = useState<number | ''>('');
-  const [barcodeValue, setBarcodeValue] = useState('');
+  const [barcodePurchaseId, setBarcodePurchaseId] = useState<number | ''>('');
+  const [barcodeBrand, setBarcodeBrand] = useState('');
+  const [barcodeInvoice, setBarcodeInvoice] = useState('');
   const [filterText, setFilterText] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSku, setFilterSku] = useState('');
@@ -61,6 +63,28 @@ export default function Products() {
   }
 
   useEffect(() => { fetchProducts(); }, []);
+
+  const [purchases, setPurchases] = useState<Array<{ purchase_id: number; invoice_no: string | null; vendor_id: number; vendor_name?: string | null; date: string }>>([]);
+  const [barcodeProductQuery, setBarcodeProductQuery] = useState('');
+  const [showBarcodeProductSuggest, setShowBarcodeProductSuggest] = useState(false);
+  const [barcodePurchaseQuery, setBarcodePurchaseQuery] = useState('');
+  const [showBarcodePurchaseSuggest, setShowBarcodePurchaseSuggest] = useState(false);
+  const filteredBarcodeProducts = useMemo(() => {
+    const q = barcodeProductQuery.toLowerCase();
+    return items.filter(p => p.product_name.toLowerCase().includes(q) || String(p.product_id).includes(barcodeProductQuery.trim()));
+  }, [items, barcodeProductQuery]);
+  const filteredBarcodePurchases = useMemo(() => {
+    const q = barcodePurchaseQuery.toLowerCase();
+    return purchases.filter(p => (p.invoice_no || '').toLowerCase().includes(q) || String(p.purchase_id).includes(barcodePurchaseQuery.trim()));
+  }, [purchases, barcodePurchaseQuery]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await get('/purchases');
+        setPurchases((r.purchases || []).map((p: any) => ({ purchase_id: p.purchase_id, invoice_no: p.invoice_no || null, vendor_id: p.vendor_id, vendor_name: p.vendor_name || null, date: p.date })));
+      } catch (err: any) { if (err?.status === 401) navigate('/login', { replace: true }); }
+    })();
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -310,40 +334,101 @@ export default function Products() {
           <div style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 12, padding: 16, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ fontWeight: 700, color: roseGold, marginBottom: 12 }}>Generate Barcode</div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', marginBottom: 6 }}>Select Product</label>
-              <select
-                value={barcodeProductId === '' ? '' : String(barcodeProductId)}
-                onChange={e => {
-                  const v = e.target.value;
-                  setBarcodeProductId(v ? Number(v) : '');
-                }}
-                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: '#fff' }}
-              >
-                <option value="">Select...</option>
-                {items.map(it => (
-                  <option key={it.product_id} value={it.product_id}>{it.product_name}</option>
-                ))}
-              </select>
+              <label style={{ display: 'block', marginBottom: 6 }}>Search Product (name or ID)</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  placeholder="Search product"
+                  value={barcodeProductQuery}
+                  onChange={e=>{ 
+                    const v = e.target.value; 
+                    setBarcodeProductQuery(v); 
+                    setShowBarcodeProductSuggest(true);
+                    const num = Number(v);
+                    if (!isNaN(num) && num > 0) {
+                      const p = items.find(pp => pp.product_id === num);
+                      if (p) { setBarcodeProductId(p.product_id); setBarcodeProductQuery(p.product_name); setShowBarcodeProductSuggest(false); }
+                    }
+                  }}
+                  onFocus={()=>setShowBarcodeProductSuggest(true)}
+                  onBlur={()=>setTimeout(()=>setShowBarcodeProductSuggest(false), 150)}
+                  onKeyDown={e=>{ if (e.key === 'Enter' && filteredBarcodeProducts[0]) { const p=filteredBarcodeProducts[0]; setBarcodeProductId(p.product_id); setBarcodeProductQuery(p.product_name); setShowBarcodeProductSuggest(false); } }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                />
+                {showBarcodeProductSuggest && barcodeProductQuery && filteredBarcodeProducts.length > 0 && (
+                  <div style={{ position: 'absolute', left: 0, right: 0, top: '100%', background: '#fff', border: '1px solid #d9a1aa', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', zIndex: 10, maxHeight: 180, overflowY: 'auto' }}>
+                    {filteredBarcodeProducts.map(p => (
+                      <div key={p.product_id} onMouseDown={()=>{ setBarcodeProductId(p.product_id); setBarcodeProductQuery(p.product_name); setShowBarcodeProductSuggest(false); }} style={{ padding: '8px 12px', cursor: 'pointer' }} onMouseEnter={e=>{ e.currentTarget.style.background = '#f7f1f2'; }} onMouseLeave={e=>{ e.currentTarget.style.background = '#fff'; }}>
+                        {p.product_name} [ID: {p.product_id}]
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', marginBottom: 6 }}>Barcode</label>
+              <label style={{ display: 'block', marginBottom: 6 }}>Search Purchase (invoice or ID)</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  placeholder="Search purchase"
+                  value={barcodePurchaseQuery}
+                  onChange={e=>{ 
+                    const v = e.target.value; 
+                    setBarcodePurchaseQuery(v); 
+                    setShowBarcodePurchaseSuggest(true);
+                    const num = Number(v);
+                    if (!isNaN(num) && num > 0) {
+                      const p = purchases.find(pp => pp.purchase_id === num);
+                      if (p) { setBarcodePurchaseId(p.purchase_id); setBarcodeInvoice(p.invoice_no || ''); setShowBarcodePurchaseSuggest(false); }
+                    }
+                  }}
+                  onFocus={()=>setShowBarcodePurchaseSuggest(true)}
+                  onBlur={()=>setTimeout(()=>setShowBarcodePurchaseSuggest(false), 150)}
+                  onKeyDown={e=>{ if (e.key === 'Enter' && filteredBarcodePurchases[0]) { const p=filteredBarcodePurchases[0]; setBarcodePurchaseId(p.purchase_id); setBarcodeInvoice(p.invoice_no || ''); setShowBarcodePurchaseSuggest(false); } }}
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                />
+                {showBarcodePurchaseSuggest && barcodePurchaseQuery && filteredBarcodePurchases.length > 0 && (
+                  <div style={{ position: 'absolute', left: 0, right: 0, top: '100%', background: '#fff', border: '1px solid #d9a1aa', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', zIndex: 10, maxHeight: 180, overflowY: 'auto' }}>
+                    {filteredBarcodePurchases.map(p => (
+                      <div key={p.purchase_id} onMouseDown={()=>{ setBarcodePurchaseId(p.purchase_id); setBarcodeInvoice(p.invoice_no || ''); setShowBarcodePurchaseSuggest(false); }} style={{ padding: '8px 12px', cursor: 'pointer' }} onMouseEnter={e=>{ e.currentTarget.style.background = '#f7f1f2'; }} onMouseLeave={e=>{ e.currentTarget.style.background = '#fff'; }}>
+                        {(p.invoice_no || '-')} {p.vendor_name ? `(${p.vendor_name})` : ''} [ID: {p.purchase_id}]
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 6 }}>Brand (optional)</label>
+              <input value={barcodeBrand} onChange={e=>setBarcodeBrand(e.target.value)} placeholder="e.g., Astra" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 6 }}>Invoice No (from purchase)</label>
+              <input value={barcodeInvoice} readOnly style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#f7f7f7', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 6 }}>Barcode (auto-generated)</label>
               <input
-                value={barcodeValue}
-                onChange={e => setBarcodeValue(e.target.value)}
-                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                value={(barcodeProductId && barcodePurchaseId) ? (()=>{ const pid = barcodeProductId; const puid = barcodePurchaseId; const b = (barcodeBrand || '').replace(/\s+/g, ''); const inv = barcodeInvoice ? String(barcodeInvoice).replace(/\s+/g, '').toUpperCase() : ''; return `BC-${pid}-${puid}${b ? '-' + b : ''}${inv ? '-' + inv : ''}`; })() : ''}
+                readOnly
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#f7f7f7', boxSizing: 'border-box' }}
               />
             </div>
             <button
               onClick={async () => {
                 const pid = barcodeProductId === '' ? 0 : barcodeProductId;
-                const bc = String(barcodeValue || '').trim();
-                if (!pid || !bc) { alert('Select a product and enter barcode'); return; }
+                const puid = barcodePurchaseId === '' ? 0 : barcodePurchaseId;
+                if (!pid || !puid) { alert('Select product and purchase'); return; }
                 try {
-                  const data = await post('/barcode', { product_id: pid, barcode: bc });
+                  const b = (barcodeBrand || '').replace(/\s+/g, '');
+                  const inv = barcodeInvoice ? String(barcodeInvoice).replace(/\s+/g, '').toUpperCase() : '';
+                  const bcStr = `BC-${pid}-${puid}${b ? '-' + b : ''}${inv ? '-' + inv : ''}`;
+                  const data = await post('/barcode', { product_id: pid, purchase_id: puid, invoice_no: barcodeInvoice || undefined, barcode: bcStr });
                   setConfirmVisible(true);
                   setTimeout(() => setConfirmVisible(false), 700);
                   setBarcodeProductId('');
-                  setBarcodeValue('');
+                  setBarcodePurchaseId('');
+                  setBarcodeBrand('');
+                  setBarcodeInvoice('');
                 } catch (err: any) {
                   alert(err?.message || 'Failed to generate barcode');
                 }
@@ -362,7 +447,7 @@ export default function Products() {
               onMouseLeave={e => (e.currentTarget.style.background = gold)}
             >
               Save Barcode
-            </button>
+              </button>
           </div>
         </div>
       </div>
