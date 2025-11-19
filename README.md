@@ -1,12 +1,12 @@
-# Heaven Bakers — Run Guide
+# Heaven Bakers — How to Run
 
-This project contains a React frontend (Vite) and a Node.js/Express backend with PostgreSQL. Follow these steps to run the app after cloning the repository.
+Heaven Bakers is a React (Vite) frontend and a Node.js/Express backend with PostgreSQL.
 
 ## Prerequisites
 - Node.js 18+ and npm
 - PostgreSQL 13+ running locally
 
-## 1) Clone the repo
+## 1) Clone
 ```bash
 git clone <your-repo-url>
 cd Heaven_Bakers
@@ -18,24 +18,23 @@ cd backend
 npm install
 ```
 
-Create a `.env` file in `backend` (optional but recommended):
+Create a `.env` file in `backend` (recommended):
 ```env
-# Server
 PORT=5000
-# Database connection string
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/Heaven_Bakers
-# JWT signing secret
 JWT_SECRET=dev-secret
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
 ```
 Notes:
-- If you skip `.env`, the backend defaults to `PORT=5000`, `DATABASE_URL=postgres://postgres:postgres@localhost:5432/Heaven_Bakers`, and `JWT_SECRET=dev-secret`.
-- On first start, the backend will auto-create required tables and seed an admin user (`admin` / `admin123`).
+- If `.env` is omitted, defaults are used: `PORT=5000`, `DATABASE_URL=postgres://postgres:postgres@localhost:5432/Heaven_Bakers`, `JWT_SECRET=dev-secret`.
+- On first start, tables are auto-created and an admin user is seeded (`admin` / `admin123`).
 
 Start the backend:
 ```bash
 npm start
 ```
-The server listens on `http://localhost:5000`.
+Backend runs at `http://localhost:5000`.
 
 ## 3) Frontend setup
 Open a new terminal:
@@ -44,21 +43,32 @@ cd frontend
 npm install
 npm run dev
 ```
-The app runs on `http://localhost:5173`.
-
-The frontend is configured to proxy API calls to the backend at `/api` via `vite.config.ts`.
+Frontend runs at `http://localhost:5173`.
 
 ## 4) Login
 - Username: `admin`
 - Password: `admin123`
 
+## 5) Reports and Exports
+- Open `Reports` from the top navigation.
+- Use the horizontal buttons to switch between `Summary`, `Sales`, `Inventory`, and `Purchases`.
+- Set `From` and `To` dates to filter.
+- `Download Excel` will export the selected report. For Sales, multiple sheets are included (Summary, By Day, By Product, Invoices).
+- `Download PDF` exports table-style PDFs for non-Sales reports.
+- `Download Sales Detailed PDF` (visible on the Sales report) exports a narrative PDF including:
+  - Date range, totals (Sales, Profit), invoices count, average per invoice
+  - By Day breakdown
+  - By Product breakdown
+  - Per-invoice blocks with item lines (qty, unit price, revenue, profit)
+
 ## Useful scripts
-- Backend: `npm start` — run server
-- Frontend: `npm run dev` — run Vite dev server
+- Backend: `npm start` — start server
+- Frontend: `npm run dev` — start Vite dev server
 - Frontend: `npm run build` — production build
 - Frontend: `npm run preview` — preview the build
 
 ## Troubleshooting
-- Ensure PostgreSQL is running and accessible at the `DATABASE_URL` you set.
-- If the database does not exist, the backend will attempt to create it automatically using your connection settings.
-- If login fails, stop and restart the backend to re-run the admin seed.
+- Ensure PostgreSQL is running and accessible at your `DATABASE_URL`.
+- If the database doesn’t exist, the backend attempts to create it automatically.
+- If login fails, restart the backend to re-run admin seeding.
+- If exports fail, refresh the page and ensure you’re logged in.

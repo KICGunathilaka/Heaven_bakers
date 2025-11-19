@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
   if (!requireAuth(req, res)) return;
   try {
     const r = await pool.query(
-      `SELECT expense_id, name, amount, note FROM expenses ORDER BY expense_id DESC`
+      `SELECT expense_id, name, amount, note, created_at FROM expenses ORDER BY expense_id DESC`
     );
     res.json({ expenses: r.rows });
   } catch (e: any) {

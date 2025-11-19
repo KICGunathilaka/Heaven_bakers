@@ -135,6 +135,8 @@ async function init() {
         note TEXT
       )
     `);
+    await pool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()`);
+    await pool.query(`UPDATE expenses SET created_at = NOW() WHERE created_at IS NULL`);
     await pool.query(`
     CREATE TABLE IF NOT EXISTS purchase_items (
       purchase_item_id SERIAL PRIMARY KEY,
@@ -249,6 +251,8 @@ async function init() {
           note TEXT
         )
       `);
+      await pool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()`);
+      await pool.query(`UPDATE expenses SET created_at = NOW() WHERE created_at IS NULL`);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS purchase_items (
           purchase_item_id SERIAL PRIMARY KEY,

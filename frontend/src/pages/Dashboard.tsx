@@ -31,6 +31,9 @@ export default function Dashboard() {
   function goExpenses() {
     navigate('/expenses');
   }
+  function goReports() {
+    navigate('/reports');
+  }
   function goHome() {
     navigate('/dashboard');
   }
@@ -274,6 +277,23 @@ export default function Dashboard() {
           onMouseLeave={e => (e.currentTarget.style.background = gold)}
         >
           Expenses
+        </button>
+        <button
+          onClick={goReports}
+          style={{
+            background: gold,
+            color: white,
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
+          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+        >
+          Reports
         </button>
         <div style={{ flex: 1 }} />
         <button
