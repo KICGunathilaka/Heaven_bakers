@@ -1,4 +1,4 @@
-const base = '/api';
+const base = (typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV) ? 'http://localhost:5000/api' : '/api';
 
 export async function get(path: string) {
   const token = localStorage.getItem('token');

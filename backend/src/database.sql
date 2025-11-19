@@ -41,7 +41,7 @@ CREATE TABLE purchases (
 );
 
 -- ==========================
--- PURCHASE ITEMS
+-- PURCHASE ITEMS   
 -- ==========================
 CREATE TABLE purchase_items (
     purchase_item_id SERIAL PRIMARY KEY,
@@ -112,13 +112,17 @@ CREATE TABLE expenses (
     amount NUMERIC(12,2) NOT NULL,
     note TEXT
 );
-
+ALTER TABLE expenses
+ADD COLUMN created_at TIMESTAMP DEFAULT NOW();
 -- ==========================
 -- BARCODE
 -- ==========================
 CREATE TABLE barcode (
     barcode_id SERIAL PRIMARY KEY,
     product_id INT REFERENCES products(product_id),
+    purchase_id INT REFERENCES purchases(purchase_id) ON DELETE CASCADE,
+    invoice_no VARCHAR(100),
     barcode VARCHAR(200) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
