@@ -133,21 +133,22 @@ export default function Purchase() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 24 }}>Purchase</div>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Home
         </button>
@@ -155,16 +156,16 @@ export default function Purchase() {
           onClick={logout}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Logout
         </button>
@@ -185,12 +186,11 @@ export default function Purchase() {
           <form
             onSubmit={submit}
             style={{
-              border: `1px solid ${roseGoldLight}`,
               borderRadius: 12,
               padding: 16,
               width: '100%',
               maxWidth: 520,
-              background: '#fff',
+              background: 'linear-gradient(135deg, #f8e7a5, #fff)',
               boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
               boxSizing: 'border-box',
               marginBottom: 16
@@ -316,16 +316,16 @@ export default function Purchase() {
         {!showForm && (
           <div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-              <input placeholder="Invoice no" value={fInvoice} onChange={e=>setFInvoice(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input placeholder="Vendor name" value={fVendor} onChange={e=>setFVendor(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input placeholder="Vendor ID" value={fVendorId} onChange={e=>setFVendorId(e.target.value)} type="number" style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+              <input placeholder="Invoice no" value={fInvoice} onChange={e=>setFInvoice(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input placeholder="Vendor name" value={fVendor} onChange={e=>setFVendor(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input placeholder="Vendor ID" value={fVendorId} onChange={e=>setFVendorId(e.target.value)} type="number" style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-              <input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input placeholder="Product name" value={fProduct} onChange={e=>setFProduct(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input placeholder="Product ID" value={fProductId} onChange={e=>setFProductId(e.target.value)} type="number" style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input placeholder="Brand" value={fBrand} onChange={e=>setFBrand(e.target.value)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+              <input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input placeholder="Product name" value={fProduct} onChange={e=>setFProduct(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input placeholder="Product ID" value={fProductId} onChange={e=>setFProductId(e.target.value)} type="number" style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input placeholder="Brand" value={fBrand} onChange={e=>setFBrand(e.target.value)} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
             </div>
 
             {purchases.length === 0 ? (
@@ -342,7 +342,7 @@ export default function Purchase() {
                   .filter(p => !fProductId || p.items.some(it => it.product_id === Number(fProductId)))
                   .filter(p => !fBrand || p.items.some(it => (it.brand || '').toLowerCase().includes(fBrand.toLowerCase())))
                   .map(p => (
-                    <div key={p.purchase_id} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                    <div key={p.purchase_id} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                         <div style={{ fontWeight: 700, color: roseGold }}>Invoice: {p.invoice_no || '-'}</div>
                         <div style={{ fontSize: 12, color: '#555' }}>Date: {new Date(p.date).toLocaleDateString()}</div>

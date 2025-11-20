@@ -11,6 +11,8 @@ import purchasesRouter from './src/routes/purchases';
 import inventoryRouter from './src/routes/inventory';
 import salesRouter from './src/routes/sales';
 import expensesRouter from './src/routes/expenses';
+import customersRouter from './src/routes/customers';
+import loyaltyRouter from './src/routes/loyalty';
 import bcrypt from 'bcryptjs';
 
 const app = express();
@@ -24,6 +26,8 @@ app.use('/api/purchases', purchasesRouter);
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/sales', salesRouter);
 app.use('/api/expenses', expensesRouter);
+app.use('/api/customers', customersRouter);
+app.use('/api/loyalty', loyaltyRouter);
 
 const port = process.env.PORT ? Number(process.env.PORT) : 5000;
 
@@ -137,6 +141,19 @@ async function init() {
     `);
     await pool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()`);
     await pool.query(`UPDATE expenses SET created_at = NOW() WHERE created_at IS NULL`);
+    await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS nic VARCHAR(20)`);
+    await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS joined_date DATE`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS loyalty_customers (
+        loyalty_customer_id SERIAL PRIMARY KEY,
+        name VARCHAR(200) NOT NULL,
+        mobile_no VARCHAR(20),
+        nic VARCHAR(20),
+        address TEXT,
+        joined_date DATE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
     await pool.query(`
     CREATE TABLE IF NOT EXISTS purchase_items (
       purchase_item_id SERIAL PRIMARY KEY,
@@ -253,6 +270,19 @@ async function init() {
       `);
       await pool.query(`ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()`);
       await pool.query(`UPDATE expenses SET created_at = NOW() WHERE created_at IS NULL`);
+      await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS nic VARCHAR(20)`);
+      await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS joined_date DATE`);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS loyalty_customers (
+          loyalty_customer_id SERIAL PRIMARY KEY,
+          name VARCHAR(200) NOT NULL,
+          mobile_no VARCHAR(20),
+          nic VARCHAR(20),
+          address TEXT,
+          joined_date DATE,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS purchase_items (
           purchase_item_id SERIAL PRIMARY KEY,

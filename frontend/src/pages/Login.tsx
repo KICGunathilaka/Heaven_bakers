@@ -28,7 +28,17 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 360, margin: '80px auto', padding: 24, border: `1px solid ${roseGold}`, borderRadius: 12, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+    <div>
+      <div style={{
+        display: 'flex', gap: 12, alignItems: 'center', padding: 12,
+        position: 'sticky', top: 0,
+        background: `linear-gradient(90deg, ${roseGold}, ${gold})`,
+        color: '#fff', borderBottom: `1px solid ${roseGold}`,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+      }}>
+        <div style={{ fontWeight: 700, fontSize: 24 }}>Heaven Bakers</div>
+      </div>
+      <div style={{ maxWidth: 360, margin: '60px auto', padding: 24, border: `1px solid ${roseGold}`, borderRadius: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
       <h2 style={{ color: roseGold }}>Login</h2>
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 12 }}>
@@ -50,6 +60,7 @@ export default function Login() {
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
+      </div>
     </div>
   );
 }
