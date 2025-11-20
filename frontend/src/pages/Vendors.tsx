@@ -88,21 +88,22 @@ export default function Vendors() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 24 }}>Vendors</div>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Home
         </button>
@@ -110,16 +111,16 @@ export default function Vendors() {
           onClick={logout}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Logout
         </button>
@@ -138,7 +139,7 @@ export default function Vendors() {
         </div>
 
         {showForm && (
-          <form onSubmit={submit} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 12, padding: 16, width: '100%', maxWidth: 520, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', boxSizing: 'border-box', marginBottom: 16 }}>
+          <form onSubmit={submit} style={{ borderRadius: 12, padding: 16, width: '100%', maxWidth: 520, background: 'linear-gradient(135deg, #f8e7a5, #fff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', boxSizing: 'border-box', marginBottom: 16 }}>
             {error && (<div style={{ color: 'red', marginBottom: 12 }}>{error}</div>)}
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', marginBottom: 6 }}>Name</label>
@@ -169,8 +170,8 @@ export default function Vendors() {
         {!showForm && (
           <div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
-              <input placeholder="Search by name" value={filterText} onChange={e=>setFilterText(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
-              <input placeholder="Search by ID" value={filterId} onChange={e=>setFilterId(e.target.value)} type="number" style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+              <input placeholder="Search by name" value={filterText} onChange={e=>setFilterText(e.target.value)} style={{ flex: 2, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
+              <input placeholder="Search by ID" value={filterId} onChange={e=>setFilterId(e.target.value)} type="number" style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }} />
             </div>
             {vendors.length === 0 ? (
               <p>No vendors yet.</p>
@@ -180,7 +181,7 @@ export default function Vendors() {
                   .filter(v => !filterText || v.name.toLowerCase().includes(filterText.toLowerCase()))
                   .filter(v => !filterId || v.vendor_id === Number(filterId))
                   .map(v => (
-                    <div key={v.vendor_id} onClick={() => startEdit(v)} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff', cursor: 'pointer' }}>
+                    <div key={v.vendor_id} onClick={() => startEdit(v)} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)', cursor: 'pointer' }}>
                       <div style={{ fontWeight: 700, color: roseGold }}>{v.name}</div>
                       <div style={{ fontSize: 12, color: '#555' }}>Contact 1: {v.contact_no1 || '-'}</div>
                       <div style={{ fontSize: 12, color: '#555' }}>Contact 2: {v.contact_no2 || '-'}</div>

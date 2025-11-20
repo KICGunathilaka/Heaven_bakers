@@ -139,21 +139,22 @@ export default function Products() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 24 }}>Products</div>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Home
         </button>
@@ -161,29 +162,28 @@ export default function Products() {
           onClick={logout}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Logout
         </button>
       </div>
 
-      {showForm && (
+        {showForm && (
         <form onSubmit={submit} style={{
-          border: `1px solid ${roseGoldLight}`,
           borderRadius: 12,
           padding: 16,
           width: '100%',
           maxWidth: 520,
-          background: '#fff',
+          background: 'linear-gradient(135deg, #f8e7a5, #fff)',
           boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
           boxSizing: 'border-box',
           marginBottom: 16
@@ -236,7 +236,7 @@ export default function Products() {
             type="submit"
             style={{
               background: gold,
-              color: '#fff',
+              color: '#000',
               border: 'none',
               padding: '8px 16px',
               borderRadius: 8,
@@ -244,8 +244,8 @@ export default function Products() {
               cursor: 'pointer',
               boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-            onMouseLeave={e => (e.currentTarget.style.background = gold)}
+            onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+            onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
           >
             Save Product
           </button>
@@ -257,7 +257,7 @@ export default function Products() {
           onClick={toggleForm}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -265,8 +265,8 @@ export default function Products() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           {showForm ? 'Close' : 'Add Product'}
         </button>
@@ -282,19 +282,19 @@ export default function Products() {
                 placeholder="Search by name"
                 value={filterText}
                 onChange={e => setFilterText(e.target.value)}
-                style={{ flex: 2, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                style={{ flex: 2, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }}
               />
               <input
                 placeholder="Search by ID"
                 value={filterId}
                 onChange={e => setFilterId(e.target.value)}
                 type="number"
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', boxSizing: 'border-box' }}
               />
               <select
                 value={filterCategory}
                 onChange={e => setFilterCategory(e.target.value)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: '#fff' }}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', boxSizing: 'border-box', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }}
               >
                 <option value="">All Categories</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -302,7 +302,7 @@ export default function Products() {
               <select
                 value={filterSku}
                 onChange={e => setFilterSku(e.target.value)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box', background: '#fff' }}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', boxSizing: 'border-box', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }}
               >
                 <option value="">All SKUs</option>
                 <option value="Grams">Grams</option>
@@ -320,7 +320,7 @@ export default function Products() {
                   .filter(it => !filterCategory || it.category === filterCategory)
                   .filter(it => !filterSku || it.sku === filterSku)
                   .map(it => (
-                  <div key={it.product_id} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                  <div key={it.product_id} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                     <div style={{ fontWeight: 700, color: roseGold }}>{it.product_name}</div>
                     <div style={{ fontSize: 12, color: '#555' }}>SKU: {it.sku || '-'}</div>
                     <div style={{ fontSize: 12, color: '#555' }}>Category: {it.category || '-'}</div>
@@ -331,7 +331,7 @@ export default function Products() {
           </div>
         </div>
         <div>
-          <div style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 12, padding: 16, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+          <div style={{ borderRadius: 12, padding: 16, background: 'linear-gradient(135deg, #f8e7a5, #fff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ fontWeight: 700, color: roseGold, marginBottom: 12 }}>Generate Barcode</div>
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', marginBottom: 6 }}>Search Product (name or ID)</label>
@@ -435,7 +435,7 @@ export default function Products() {
               }}
               style={{
                 background: gold,
-                color: '#fff',
+                color: '#000',
                 border: 'none',
                 padding: '8px 16px',
                 borderRadius: 8,
@@ -443,8 +443,8 @@ export default function Products() {
                 cursor: 'pointer',
                 boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-              onMouseLeave={e => (e.currentTarget.style.background = gold)}
+              onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+              onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
             >
               Save Barcode
               </button>

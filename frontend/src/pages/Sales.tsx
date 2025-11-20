@@ -10,6 +10,12 @@ const goldHover = '#c9a227';
 export default function Sales() {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
+  const [showLoyalty, setShowLoyalty] = useState(false);
+  const [lcName, setLcName] = useState('');
+  const [lcMobile, setLcMobile] = useState('');
+  const [lcJoined, setLcJoined] = useState('');
+  const [lcNic, setLcNic] = useState('');
+  const [lcAddress, setLcAddress] = useState('');
   const [invoiceNo, setInvoiceNo] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [contactNo, setContactNo] = useState('');
@@ -33,6 +39,29 @@ export default function Sales() {
   const [fBrand, setFBrand] = useState('');
   const [fTotalMin, setFTotalMin] = useState('');
   const [fTotalMax, setFTotalMax] = useState('');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('sales_form_cache');
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (typeof d.invoiceNo === 'string') setInvoiceNo(d.invoiceNo);
+        if (typeof d.customerName === 'string') setCustomerName(d.customerName);
+        if (typeof d.contactNo === 'string') setContactNo(d.contactNo);
+        if (typeof d.address === 'string') setAddress(d.address);
+        if (typeof d.date === 'string') setDate(d.date);
+        if (typeof d.discount === 'string') setDiscount(d.discount);
+        if (typeof d.note === 'string') setNote(d.note);
+        if (Array.isArray(d.items)) setItems(d.items);
+        if (d.showForm === true) setShowForm(true);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const data = { invoiceNo, customerName, contactNo, address, date, discount, note, items, showForm };
+    try { localStorage.setItem('sales_form_cache', JSON.stringify(data)); } catch {}
+  }, [invoiceNo, customerName, contactNo, address, date, discount, note, items, showForm]);
 
   function logout() {
     localStorage.removeItem('token');
@@ -174,6 +203,7 @@ export default function Sales() {
         setSales(Object.values(map));
       } catch {}
       setInvoiceNo(''); setCustomerName(''); setContactNo(''); setAddress(''); setDate(''); setDiscount(''); setNote(''); setItems([{ inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null }]); setShowForm(false);
+      try { localStorage.removeItem('sales_form_cache'); } catch {}
     } catch (err: any) {
       if (err?.status === 401) { localStorage.removeItem('token'); navigate('/login', { replace: true }); return; }
       setError(err?.message || 'Failed to save sale');
@@ -195,21 +225,22 @@ export default function Sales() {
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
       }}>
         <div style={{ fontWeight: 700, fontSize: 24 }}>Sales</div>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Home
         </button>
@@ -217,16 +248,16 @@ export default function Sales() {
           onClick={logout}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Logout
         </button>
@@ -241,9 +272,15 @@ export default function Sales() {
           >
             {showForm ? 'Close' : 'Add Sale'}
           </button>
+          <button
+            onClick={() => setShowLoyalty(true)}
+            style={{ marginLeft: 8, background: roseGold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
+          >
+            Add Loyalty Customer
+          </button>
         </div>
         {showForm && (
-          <form onSubmit={submit} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 12, padding: 16, width: '100%', maxWidth: 1400, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', boxSizing: 'border-box', marginBottom: 16 }}>
+          <form onSubmit={submit} style={{ borderRadius: 12, padding: 16, width: '100%', maxWidth: 1400, background: `linear-gradient(135deg, ${roseGoldLight}, #fff)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', boxSizing: 'border-box', marginBottom: 16 }}>
             {error && (<div style={{ color: 'red', marginBottom: 12 }}>{error}</div>)}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
               <div style={{ marginBottom: 12 }}>
@@ -368,19 +405,72 @@ export default function Sales() {
             <div style={{ marginTop: 12 }}>
               <button type="submit" style={{ background: gold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }} onMouseEnter={e => (e.currentTarget.style.background = goldHover)} onMouseLeave={e => (e.currentTarget.style.background = gold)}>Save Sale</button>
             </div>
-          </form>
+        </form>
         )}
-        <div style={{ marginTop: 16 }}>
+        {showLoyalty && (
+          <div style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ width: 420, maxWidth: '90%', background: '#fff', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', border: `1px solid ${roseGoldLight}` }}>
+              <div style={{ padding: 12, borderBottom: `1px solid ${roseGoldLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontWeight: 700, color: roseGold }}>Add Loyalty Customer</div>
+                <button onClick={() => setShowLoyalty(false)} style={{ background: 'transparent', color: '#333', border: 'none', padding: 6, cursor: 'pointer' }}>✕</button>
+              </div>
+              <div style={{ padding: 14 }}>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Name</label>
+                  <input value={lcName} onChange={e=>setLcName(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Mobile No</label>
+                  <input value={lcMobile} onChange={e=>setLcMobile(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Joined Date</label>
+                  <input type="date" value={lcJoined} onChange={e=>setLcJoined(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>NIC</label>
+                  <input value={lcNic} onChange={e=>setLcNic(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ display: 'block', marginBottom: 6 }}>Address</label>
+                  <input value={lcAddress} onChange={e=>setLcAddress(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button onClick={() => setShowLoyalty(false)} style={{ background: '#eee', color: '#333', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                  <button
+                    onClick={async () => {
+                      if (!lcName) { alert('Enter name'); return }
+                      try {
+                        const payload = { name: lcName, mobile_no: lcMobile || undefined, nic: lcNic || undefined, address: lcAddress || undefined, joined_date: lcJoined || undefined }
+                        await post('/loyalty', payload)
+                        setShowLoyalty(false); setLcName(''); setLcMobile(''); setLcJoined(''); setLcNic(''); setLcAddress('')
+                      } catch (err: any) {
+                        if (err?.status === 401) navigate('/login', { replace: true });
+                        else alert(err?.message || 'Failed to save customer')
+                      }
+                    }}
+                    style={{ background: gold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
+                    onMouseLeave={e => (e.currentTarget.style.background = gold)}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div style={{ marginTop: 16, display: showForm ? 'none' : 'block' }}>
           <div style={{ fontWeight: 700, color: roseGold, marginBottom: 8 }}>Recent Sales</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-            <input placeholder="Invoice" value={fInvoice} onChange={e=>setFInvoice(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input placeholder="Customer" value={fCustomer} onChange={e=>setFCustomer(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input placeholder="Contact" value={fContact} onChange={e=>setFContact(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input placeholder="Product" value={fProduct} onChange={e=>setFProduct(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input placeholder="Inventory ID" value={fInventoryId} onChange={e=>setFInventoryId(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: 120 }} />
-            <input placeholder="Brand" value={fBrand} onChange={e=>setFBrand(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
+            <input placeholder="Invoice" value={fInvoice} onChange={e=>setFInvoice(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input placeholder="Customer" value={fCustomer} onChange={e=>setFCustomer(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input placeholder="Contact" value={fContact} onChange={e=>setFContact(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input type="date" value={fDateFrom} onChange={e=>setFDateFrom(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input type="date" value={fDateTo} onChange={e=>setFDateTo(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input placeholder="Product" value={fProduct} onChange={e=>setFProduct(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input placeholder="Inventory ID" value={fInventoryId} onChange={e=>setFInventoryId(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)', width: 120 }} />
+            <input placeholder="Brand" value={fBrand} onChange={e=>setFBrand(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
             <input placeholder="Min Total" type="number" step="0.01" value={fTotalMin} onChange={e=>setFTotalMin(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: 140 }} />
             <input placeholder="Max Total" type="number" step="0.01" value={fTotalMax} onChange={e=>setFTotalMax(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd', width: 140 }} />
           </div>
@@ -398,7 +488,7 @@ export default function Sales() {
               .filter(s => !fProduct || s.items.some(it => (inventory.find(inv => inv.inventory_id === it.inventory_id)?.product_name || '').toLowerCase().includes(fProduct.toLowerCase())));
             if (filtered.length === 0) return (<div style={{ fontSize: 12, color: '#777' }}>No sales</div>);
             return filtered.slice(0, 20).map(s => (
-              <div key={s.sale_id} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff', marginBottom: 8 }}>
+              <div key={s.sale_id} style={{ borderRadius: 8, padding: 12, background: `linear-gradient(135deg, ${roseGoldLight}, #fff)`, marginBottom: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div style={{ fontWeight: 600 }}>Invoice: {s.sale_invoice_no || '-'}</div>
                   <div style={{ fontSize: 12, color: '#555' }}>{new Date(s.date).toLocaleDateString()}</div>
