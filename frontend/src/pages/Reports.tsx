@@ -407,21 +407,22 @@ export default function Reports() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 24 }}>Reports</div>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Home
         </button>
@@ -429,16 +430,16 @@ export default function Reports() {
           onClick={logout}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Logout
         </button>
@@ -468,8 +469,8 @@ export default function Reports() {
               </button>
             ))}
           </div>
-          <input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-          <input type="date" value={to} onChange={e=>setTo(e.target.value)} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+          <input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={{ padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+          <input type="date" value={to} onChange={e=>setTo(e.target.value)} style={{ padding: 10, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
           <div style={{ flex: 1 }} />
           <button onClick={exportExcel} style={{ background: gold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }} onMouseEnter={e => (e.currentTarget.style.background = goldHover)} onMouseLeave={e => (e.currentTarget.style.background = gold)}>Download Excel</button>
           <button onClick={exportPDF} style={{ background: roseGold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>Download PDF</button>
@@ -555,7 +556,7 @@ export default function Reports() {
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
                       {byDay.map(d => (
-                        <div key={d.date} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                        <div key={d.date} style={{ borderRadius: 8, padding: 12, background: '#fff' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div style={{ fontWeight: 600 }}>{new Date(d.date).toLocaleDateString()}</div>
                             <div style={{ fontSize: 12 }}>Invoices: {d.invoices}</div>
@@ -577,7 +578,7 @@ export default function Reports() {
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
                       {byProduct.map(p => (
-                        <div key={p.product} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                        <div key={p.product} style={{ borderRadius: 8, padding: 12, background: '#fff' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <div style={{ fontWeight: 600 }}>{p.product}</div>
                             <div style={{ fontSize: 12 }}>Qty: {p.qty}</div>
@@ -599,7 +600,7 @@ export default function Reports() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
               {(currentRows() as any[]).map((r, idx) => (
-                <div key={idx} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                <div key={idx} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 600 }}>{r.invoice}</div>
                     <div style={{ fontSize: 12 }}>{r.date}</div>
@@ -621,7 +622,7 @@ export default function Reports() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
               {(currentRows() as any[]).map((r, idx) => (
-                <div key={idx} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                <div key={idx} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 600 }}>{r.invoice}</div>
                     <div style={{ fontSize: 12 }}>{r.date}</div>
@@ -642,7 +643,7 @@ export default function Reports() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
               {(currentRows() as any[]).map((r, idx) => (
-                <div key={idx} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff' }}>
+                <div key={idx} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 600 }}>{r.product}</div>
                     <div style={{ fontSize: 12 }}>{r.brand}</div>

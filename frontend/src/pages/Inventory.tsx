@@ -51,21 +51,22 @@ export default function Inventory() {
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
       }}>
         <div style={{ fontWeight: 700, fontSize: 24 }}>Inventory</div>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Home
         </button>
@@ -73,16 +74,16 @@ export default function Inventory() {
           onClick={logout}
           style={{
             background: gold,
-            color: '#fff',
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Logout
         </button>
@@ -90,9 +91,9 @@ export default function Inventory() {
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input placeholder="Filter by product" value={qProduct} onChange={e=>setQProduct(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input placeholder="Filter by vendor" value={qVendor} onChange={e=>setQVendor(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
-            <input placeholder="Filter by brand" value={qBrand} onChange={e=>setQBrand(e.target.value)} style={{ padding: 8, borderRadius: 8, border: '1px solid #ddd' }} />
+            <input placeholder="Filter by product" value={qProduct} onChange={e=>setQProduct(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input placeholder="Filter by vendor" value={qVendor} onChange={e=>setQVendor(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
+            <input placeholder="Filter by brand" value={qBrand} onChange={e=>setQBrand(e.target.value)} style={{ padding: 8, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #f7f7f7, #ffffff)' }} />
           </div>
         </div>
       {filtered.length === 0 ? (
@@ -109,7 +110,7 @@ export default function Inventory() {
               return { value: q.toFixed(2), unit: '' };
             })();
             return (
-              <div key={i.inventory_id} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 10, padding: 14, background: '#fff' }}>
+              <div key={i.inventory_id} style={{ borderRadius: 10, padding: 14, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: roseGold }}>{i.product_name || 'Unknown'}</div>
                   <div style={{ background: roseGoldLight, color: '#222', borderRadius: 18, padding: '6px 12px', fontWeight: 700, minWidth: 120, textAlign: 'center' }}>

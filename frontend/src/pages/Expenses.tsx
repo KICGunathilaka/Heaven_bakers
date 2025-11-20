@@ -51,9 +51,10 @@ export default function Expenses() {
         background: `linear-gradient(90deg, ${roseGold}, ${roseGoldLight})`, color: '#fff', borderBottom: `1px solid ${roseGoldLight}`, boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
       }}>
         <div style={{ fontWeight: 700, fontSize: 24 }}>Expenses</div>
+        
         <div style={{ flex: 1 }} />
-        <button onClick={goHome} style={{ background: gold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }} onMouseEnter={e => (e.currentTarget.style.background = goldHover)} onMouseLeave={e => (e.currentTarget.style.background = gold)}>Home</button>
-        <button onClick={logout} style={{ background: gold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }} onMouseEnter={e => (e.currentTarget.style.background = goldHover)} onMouseLeave={e => (e.currentTarget.style.background = gold)}>Logout</button>
+        <button onClick={goHome} style={{ background: gold, color: '#000', border: 'none', padding: '10px 20px', borderRadius: 8, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }} onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }} onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}>Home</button>
+        <button onClick={logout} style={{ background: gold, color: '#000', border: 'none', padding: '10px 20px', borderRadius: 8, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }} onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }} onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}>Logout</button>
       </div>
       <div style={{ padding: 24 }}>
         <div style={{ marginBottom: 16 }}>
@@ -67,7 +68,7 @@ export default function Expenses() {
           </button>
         </div>
         {showForm && (
-          <form onSubmit={submit} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 12, padding: 16, width: '100%', maxWidth: 520, background: '#fff', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', boxSizing: 'border-box', marginBottom: 16 }}>
+          <form onSubmit={submit} style={{ borderRadius: 12, padding: 16, width: '100%', maxWidth: 520, background: 'linear-gradient(135deg, #f8e7a5, #fff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)', boxSizing: 'border-box', marginBottom: 16 }}>
             {error && (<div style={{ color: 'red', marginBottom: 12 }}>{error}</div>)}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div style={{ marginBottom: 12 }}>
@@ -100,7 +101,7 @@ export default function Expenses() {
               <div style={{ fontSize: 12, color: '#777' }}>No expenses yet</div>
             ) : (
               expenses.slice(0, 20).map(ex => (
-                <div key={ex.expense_id} style={{ border: `1px solid ${roseGoldLight}`, borderRadius: 8, padding: 12, background: '#fff', marginBottom: 8 }}>
+                <div key={ex.expense_id} style={{ borderRadius: 8, padding: 12, background: 'linear-gradient(135deg, #f8e7a5, #fff)', marginBottom: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                     <div style={{ fontWeight: 600 }}>{ex.name}</div>
                     <div style={{ fontSize: 12, color: '#555' }}>{ex.amount?.toFixed?.(2) ?? ex.amount}</div>

@@ -9,6 +9,19 @@ export default function Dashboard() {
   const gold = '#d4af37';
   const goldHover = '#c9a227';
   const white = '#ffffff';
+  const standardColors = ['#3366CC','#DC3912','#FF9900','#109618','#990099','#3B3EAC','#0099C6'];
+  function adjust(hex: string, amt: number) {
+    const clean = hex.replace('#', '');
+    const num = parseInt(clean, 16);
+    let r = (num >> 16) + amt;
+    let g = ((num >> 8) & 0x00FF) + amt;
+    let b = (num & 0x0000FF) + amt;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    const out = (r << 16) | (g << 8) | b;
+    return '#' + out.toString(16).padStart(6, '0');
+  }
   function logout() {
     localStorage.removeItem('token');
     navigate('/login', { replace: true });
@@ -33,6 +46,9 @@ export default function Dashboard() {
   }
   function goReports() {
     navigate('/reports');
+  }
+  function goLoyalty() {
+    navigate('/loyalty');
   }
   function goHome() {
     navigate('/dashboard');
@@ -170,17 +186,17 @@ export default function Dashboard() {
           padding: 12,
           position: 'sticky',
           top: 0,
-          background: `linear-gradient(90deg, ${roseGold}, ${roseGoldLight})`,
+          background: 'linear-gradient(90deg, #212121, #ffffff)',
           color: white,
-          borderBottom: `1px solid ${roseGoldLight}`,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          borderBottom: '1px solid #dcdcdc',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.10)'
         }}
       >
         <button
           onClick={goProducts}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -188,8 +204,8 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Products
         </button>
@@ -197,7 +213,7 @@ export default function Dashboard() {
           onClick={goVendors}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -205,8 +221,8 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Vendors
         </button>
@@ -214,7 +230,7 @@ export default function Dashboard() {
           onClick={goPurchase}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -222,8 +238,8 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Purchase
         </button>
@@ -231,7 +247,7 @@ export default function Dashboard() {
           onClick={goInventory}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -239,8 +255,8 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Inventory
         </button>
@@ -248,7 +264,7 @@ export default function Dashboard() {
           onClick={goSales}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -256,8 +272,8 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Sales
         </button>
@@ -265,7 +281,7 @@ export default function Dashboard() {
           onClick={goExpenses}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -273,8 +289,8 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Expenses
         </button>
@@ -282,7 +298,7 @@ export default function Dashboard() {
           onClick={goReports}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
             padding: '8px 16px',
             borderRadius: 8,
@@ -290,21 +306,22 @@ export default function Dashboard() {
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
-          onMouseLeave={e => (e.currentTarget.style.background = gold)}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
         >
           Reports
         </button>
+        
         <div style={{ flex: 1 }} />
         <button
           onClick={goHome}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
@@ -317,11 +334,11 @@ export default function Dashboard() {
           onClick={logout}
           style={{
             background: gold,
-            color: white,
+            color: '#000',
             border: 'none',
-            padding: '8px 16px',
+            padding: '10px 20px',
             borderRadius: 8,
-            fontWeight: 600,
+            fontWeight: 800,
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
           }}
@@ -332,21 +349,21 @@ export default function Dashboard() {
         </button>
       </div>
       <div style={{ padding: 24 }}>
-        <h2 style={{ color: roseGold }}>Dashboard</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 12 }}>
-          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, ${roseGoldLight}, #fff)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+        <h2 style={{ color: roseGold, fontSize: 32, fontWeight: 800 }}>Dashboard</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 12 }}>
+          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #bbdefb, #64b5f6)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: roseGold, fontWeight: 700, opacity: 0.9 }}>Today Sales</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: '#333' }}>Rs. {fmt(todaySales)}</div>
           </div>
-          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #f8e7a5, #fff)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #ffcdd2, #ef9a9a)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: gold, fontWeight: 700, opacity: 0.9 }}>Today Expenses</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: '#333' }}>Rs. {fmt(todayExpenses)}</div>
           </div>
-          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #d9a1aa, #fff)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #c8e6c9, #81c784)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: roseGold, fontWeight: 700, opacity: 0.9 }}>Profit</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: '#333' }}>Rs. {fmt(todayProfit)}</div>
           </div>
-          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #f7f7f7, #fff)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+          <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #fff9c4, #ffe082)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: roseGold, fontWeight: 700, opacity: 0.9 }}>Most Moving</div>
             {mostMoving.length === 0 ? (
               <div style={{ color: '#777' }}>No data</div>
@@ -359,8 +376,47 @@ export default function Dashboard() {
               ))
             )}
           </div>
+          <div style={{ padding: 14, borderRadius: 12, background: 'linear-gradient(135deg, #ffe3ea, #ffffff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+            <div style={{ color: roseGold, fontWeight: 700, marginBottom: 6 }}>Purchases by Vendor</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 140, overflowY: 'auto' }}>
+              {purchasesByVendor.slice(0,6).map((seg, i) => (
+                <div key={seg.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: `linear-gradient(135deg, ${adjust(standardColors[i%standardColors.length], 80)}, ${adjust(standardColors[i%standardColors.length], 20)})` }} />
+                    <div style={{ fontWeight: 700, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{seg.label}</div>
+                  </div>
+                  <div style={{ fontWeight: 800 }}>Rs. {fmt(seg.value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: 14, borderRadius: 12, background: 'linear-gradient(135deg, #e6f0ff, #ffffff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+            <div style={{ color: roseGold, fontWeight: 700, marginBottom: 6 }}>Purchases by Product</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 140, overflowY: 'auto' }}>
+              {purchasesByProduct.slice(0,6).map((seg, i) => (
+                <div key={seg.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: `linear-gradient(135deg, ${adjust(standardColors[i%standardColors.length], 80)}, ${adjust(standardColors[i%standardColors.length], 20)})` }} />
+                    <div style={{ fontWeight: 700, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{seg.label}</div>
+                  </div>
+                  <div style={{ fontWeight: 800 }}>Rs. {fmt(seg.value)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ padding: 14, borderRadius: 12, background: 'linear-gradient(135deg, #a5d6a7, #66bb6a)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+            <div style={{ color: roseGold, fontWeight: 700, marginBottom: 6 }}>Sales (Last 7 Days)</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', height: 100 }}>
+              {salesLast7.map(d => {
+                const h = Math.round((d.total / maxBar) * 90) + 6;
+                const bg = `linear-gradient(180deg, #616161, #212121)`;
+                return (
+                  <div key={d.date} style={{ width: 24, background: bg, height: h, borderRadius: 6, boxShadow: '0 3px 8px rgba(0,0,0,0.12)' }} />
+                );
+              })}
+            </div>
+          </div>
         </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 16 }}>
           <div style={{ padding: 16, borderRadius: 12, background: 'linear-gradient(135deg, #ffe3ea, #ffffff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: roseGold, fontWeight: 700, marginBottom: 8 }}>Purchases by Vendor</div>
@@ -370,7 +426,6 @@ export default function Dashboard() {
                 {(() => {
                   const CX = 140, CY = 120, R = 100;
                   let acc = 0;
-                  const colors = ['#b76e79','#d4af37','#c9a227','#7fb069','#6fa3ef','#f28c8c','#a48cf2'];
                   function arcPath(cx:number, cy:number, r:number, start:number, end:number) {
                     const s = (start-90) * Math.PI/180; const e = (end-90) * Math.PI/180;
                     const x1 = cx + r*Math.cos(s); const y1 = cy + r*Math.sin(s);
@@ -378,17 +433,35 @@ export default function Dashboard() {
                     const large = (end-start) > 180 ? 1 : 0;
                     return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
                   }
-                  return purchasesByVendor.map((seg, idx) => {
-                    const start = acc*360; const end = (acc+seg.pct)*360; acc += seg.pct;
-                    return <path key={seg.label} d={arcPath(CX,CY,R,start,end)} fill={colors[idx%colors.length]} opacity={0.9} />
+                  const grads = purchasesByVendor.map((seg, idx) => {
+                    const base = standardColors[idx%standardColors.length];
+                    const light = adjust(base, 80);
+                    const dark = adjust(base, 20);
+                    return { id: `vendorGrad-${idx}`, light, dark };
                   });
+                  const elems = [] as JSX.Element[];
+                  elems.push(
+                    <defs key="defs-vendor">
+                      {grads.map(g => (
+                        <linearGradient id={g.id} x1="0" y1="0" x2="1" y2="1" key={g.id}>
+                          <stop offset="0%" stopColor={g.light} />
+                          <stop offset="100%" stopColor={g.dark} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                  );
+                  purchasesByVendor.forEach((seg, idx) => {
+                    const start = acc*360; const end = (acc+seg.pct)*360; acc += seg.pct;
+                    elems.push(<path key={seg.label} d={arcPath(CX,CY,R,start,end)} fill={`url(#${grads[idx].id})`} opacity={0.85} />);
+                  });
+                  return elems;
                 })()}
               </svg>
               <div style={{ maxHeight: 220, overflowY: 'auto' }}>
                 {purchasesByVendor.slice(0,8).map((seg, i) => (
                   <div key={seg.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, fontSize: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 12, height: 12, borderRadius: 2, background: ['#b76e79','#d4af37','#c9a227','#7fb069','#6fa3ef','#f28c8c','#a48cf2'][i%7] }} />
+                      <div style={{ width: 12, height: 12, borderRadius: 2, background: `linear-gradient(135deg, ${adjust(standardColors[i%standardColors.length], 80)}, ${adjust(standardColors[i%standardColors.length], 20)})` }} />
                       <div style={{ fontWeight: 700 }}>{seg.label}</div>
                     </div>
                     <div style={{ fontWeight: 800 }}>Rs. {fmt(seg.value)} ({Math.round(seg.pct*100)}%)</div>
@@ -405,7 +478,6 @@ export default function Dashboard() {
                 {(() => {
                   const CX = 140, CY = 120, R = 100;
                   let acc = 0;
-                  const colors = ['#6fa3ef','#f28c8c','#a48cf2','#7fb069','#b76e79','#d4af37','#c9a227'];
                   function arcPath(cx:number, cy:number, r:number, start:number, end:number) {
                     const s = (start-90) * Math.PI/180; const e = (end-90) * Math.PI/180;
                     const x1 = cx + r*Math.cos(s); const y1 = cy + r*Math.sin(s);
@@ -413,17 +485,35 @@ export default function Dashboard() {
                     const large = (end-start) > 180 ? 1 : 0;
                     return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
                   }
-                  return purchasesByProduct.map((seg, idx) => {
-                    const start = acc*360; const end = (acc+seg.pct)*360; acc += seg.pct;
-                    return <path key={seg.label} d={arcPath(CX,CY,R,start,end)} fill={colors[idx%colors.length]} opacity={0.9} />
+                  const grads = purchasesByProduct.map((seg, idx) => {
+                    const base = standardColors[idx%standardColors.length];
+                    const light = adjust(base, 80);
+                    const dark = adjust(base, 20);
+                    return { id: `productGrad-${idx}`, light, dark };
                   });
+                  const elems = [] as JSX.Element[];
+                  elems.push(
+                    <defs key="defs-product">
+                      {grads.map(g => (
+                        <linearGradient id={g.id} x1="0" y1="0" x2="1" y2="1" key={g.id}>
+                          <stop offset="0%" stopColor={g.light} />
+                          <stop offset="100%" stopColor={g.dark} />
+                        </linearGradient>
+                      ))}
+                    </defs>
+                  );
+                  purchasesByProduct.forEach((seg, idx) => {
+                    const start = acc*360; const end = (acc+seg.pct)*360; acc += seg.pct;
+                    elems.push(<path key={seg.label} d={arcPath(CX,CY,R,start,end)} fill={`url(#${grads[idx].id})`} opacity={0.85} />);
+                  });
+                  return elems;
                 })()}
               </svg>
               <div style={{ maxHeight: 220, overflowY: 'auto' }}>
                 {purchasesByProduct.slice(0,8).map((seg, i) => (
                   <div key={seg.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, fontSize: 14 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 12, height: 12, borderRadius: 2, background: ['#6fa3ef','#f28c8c','#a48cf2','#7fb069','#b76e79','#d4af37','#c9a227'][i%7] }} />
+                      <div style={{ width: 12, height: 12, borderRadius: 2, background: `linear-gradient(135deg, ${adjust(standardColors[i%standardColors.length], 80)}, ${adjust(standardColors[i%standardColors.length], 20)})` }} />
                       <div style={{ fontWeight: 700 }}>{seg.label}</div>
                     </div>
                     <div style={{ fontWeight: 800 }}>Rs. {fmt(seg.value)} ({Math.round(seg.pct*100)}%)</div>
@@ -433,24 +523,26 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        <div style={{ marginTop: 16, padding: 16, borderRadius: 12, background: 'linear-gradient(135deg, #fff2cc, #ffffff)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
+        <div style={{ marginTop: 16, padding: 16, borderRadius: 12, background: 'linear-gradient(135deg, #a5d6a7, #66bb6a)', boxShadow: '0 6px 18px rgba(0,0,0,0.1)' }}>
           <div style={{ color: roseGold, fontWeight: 700, marginBottom: 8 }}>Sales (Last 7 Days)</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: 160 }}>
-            {salesLast7.map((d, i) => {
-              const h = Math.round((d.total / maxBar) * 140) + 6;
-              const bg = `linear-gradient(180deg, ${roseGoldLight}, #f7f7f7)`;
-              return (
-                <div key={d.date} style={{ width: 36, background: bg, height: h, borderRadius: 8, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.08)' }}>
-                  <div style={{ fontSize: 10, marginBottom: 4 }}>Rs. {fmt(d.total)}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 12, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', height: 160 }}>
+              {salesLast7.map((d, i) => {
+                const h = Math.round((d.total / maxBar) * 140) + 6;
+                const bg = `linear-gradient(180deg, #616161, #212121)`;
+                return (
+                  <div key={d.date} style={{ width: 36, background: bg, height: h, borderRadius: 8, boxShadow: '0 4px 10px rgba(0,0,0,0.12)' }} />
+                );
+              })}
+            </div>
+            <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {salesLast7.map(d => (
+                <div key={d.date} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 12 }}>{d.date.slice(5)}</div>
+                  <div style={{ fontWeight: 800, fontSize: 12, padding: '4px 8px', borderRadius: 8, background: 'linear-gradient(135deg, #616161, #212121)', color: '#fff' }}>Rs. {fmt(d.total)}</div>
                 </div>
-              );
-            })}
-          </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', marginTop: 6 }}>
-            {salesLast7.map(d => (
-              <div key={d.date} style={{ width: 36, textAlign: 'center', fontSize: 10 }}>{d.date.slice(5)}</div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
