@@ -73,24 +73,57 @@ router.post('/', async (req, res) => {
       let brandVal: string | null = null;
       let sku: string | null = null;
       let unitPrice = 0;
+      let purchaseIdForItem: number | null = null;
+      let sellingFromBatch: number | null = null;
 
       if (it.barcode) {
-        const br = await client.query(`SELECT product_id, purchase_id, invoice_no FROM barcode WHERE barcode = $1`, [it.barcode]);
-        if (!br.rows[0]) throw new Error('Invalid barcode');
-        const b = br.rows[0];
-        const pr = await client.query(`SELECT vendor_id FROM purchases WHERE purchase_id = $1`, [b.purchase_id]);
-        if (!pr.rows[0]) throw new Error('Invalid barcode purchase');
-        vendorId = pr.rows[0].vendor_id;
-        productId = b.product_id;
+        const code = String(it.barcode).trim();
+        const br = await client.query(`SELECT product_id, invoice_no, brand FROM barcode WHERE barcode = $1`, [code]);
+        let parsedProductId: number | null = null;
+        let parsedPurchaseId: number | null = null;
+        let parsedInvoiceNo: string | null = null;
+        let parsedBrand: string | null = null;
+        const mBrand = /^BC-(\d+)-(\d+)-([^\-]+)-(.*)$/.exec(code);
+        const mInvoiceOnly = /^BC-(\d+)-(\d+)-(.*)$/.exec(code);
+        const mBasic = /^BC-(\d+)-(\d+)$/.exec(code);
+        if (mBrand) {
+          parsedProductId = Number(mBrand[1]);
+          parsedPurchaseId = Number(mBrand[2]);
+          parsedBrand = (mBrand[3] || '').trim() || null;
+          parsedInvoiceNo = (mBrand[4] || '').trim() || null;
+        } else if (mInvoiceOnly) {
+          parsedProductId = Number(mInvoiceOnly[1]);
+          parsedPurchaseId = Number(mInvoiceOnly[2]);
+          parsedInvoiceNo = (mInvoiceOnly[3] || '').trim() || null;
+        } else if (mBasic) {
+          parsedProductId = Number(mBasic[1]);
+          parsedPurchaseId = Number(mBasic[2]);
+        }
+        const b = br.rows[0] || {};
+        purchaseIdForItem = parsedPurchaseId || null;
+        productId = (b.product_id ?? parsedProductId) as number;
+        let prRow: any = null;
+        if (purchaseIdForItem) {
+          const pr = await client.query(`SELECT purchase_id, vendor_id, invoice_no FROM purchases WHERE purchase_id = $1`, [purchaseIdForItem]);
+          prRow = pr.rows[0] || null;
+        }
+        if (!prRow && (parsedInvoiceNo || b.invoice_no)) {
+          const pr2 = await client.query(`SELECT purchase_id, vendor_id, invoice_no FROM purchases WHERE invoice_no = $1 ORDER BY purchase_id DESC LIMIT 1`, [parsedInvoiceNo || b.invoice_no]);
+          prRow = pr2.rows[0] || null;
+          purchaseIdForItem = prRow?.purchase_id || purchaseIdForItem;
+        }
+        if (!prRow) throw new Error('Invalid barcode purchase');
+        vendorId = prRow.vendor_id;
         const pi = await client.query(`
-          SELECT unit_price, brand
+          SELECT unit_price, brand, selling_price
           FROM purchase_items
           WHERE purchase_id = $1 AND product_id = $2
           ORDER BY purchase_item_id DESC
           LIMIT 1
-        `, [b.purchase_id, b.product_id]);
-        brandVal = pi.rows[0]?.brand || null;
+        `, [purchaseIdForItem, productId]);
+        brandVal = (b.brand || null) ?? parsedBrand ?? (pi.rows[0]?.brand || null);
         unitPrice = pi.rows[0]?.unit_price ? Number(pi.rows[0].unit_price) : 0;
+        sellingFromBatch = pi.rows[0]?.selling_price != null ? Number(pi.rows[0].selling_price) : null;
         const invByPB = await client.query(`
           SELECT i.inventory_id, i.product_id, i.vendor_id, i.brand, p.sku
           FROM inventory_items i
@@ -113,23 +146,26 @@ router.post('/', async (req, res) => {
         productId = ip.product_id;
         vendorId = ip.vendor_id;
         brandVal = it.brand || ip.brand || null;
+        const hasDate = typeof it.purchase_date === 'string' && it.purchase_date.length >= 10;
         const pu = await client.query(
-          `SELECT pi.unit_price
+          `SELECT pi.unit_price, pi.selling_price
            FROM purchase_items pi
            JOIN purchases p ON p.purchase_id = pi.purchase_id
            WHERE pi.product_id = $1 AND p.vendor_id = $2 AND (pi.brand IS NOT DISTINCT FROM $3)
+             ${hasDate ? 'AND p.purchase_date = $4' : ''}
            ORDER BY pi.purchase_item_id DESC
            LIMIT 1`,
-          [productId, vendorId, brandVal]
+          hasDate ? [productId, vendorId, brandVal, (it.purchase_date as string).slice(0,10)] : [productId, vendorId, brandVal]
         );
         unitPrice = pu.rows[0]?.unit_price ? Number(pu.rows[0].unit_price) : 0;
+        sellingFromBatch = pu.rows[0]?.selling_price != null ? Number(pu.rows[0].selling_price) : null;
         sku = ip.sku || null;
       }
 
       const qtyNum = Number(it.qty);
       const brandToUse = brandVal;
       if (sku === 'Grams') {
-        const perUnitSelling = Number((unitPrice * 1.3).toFixed(2));
+        const perUnitSelling = (typeof sellingFromBatch === 'number' && !isNaN(sellingFromBatch)) ? sellingFromBatch : Number((unitPrice * 1.3).toFixed(2));
         const lineTotalRounded = roundUpToNearest5(perUnitSelling * qtyNum);
         const profit = (perUnitSelling - unitPrice) * qtyNum;
         const si = await client.query(
@@ -141,8 +177,7 @@ router.post('/', async (req, res) => {
         insertedItems.push(si.rows[0]);
         total += lineTotalRounded;
       } else {
-        const sellingRaw = unitPrice * 1.3;
-        const sellingPrice = roundUpToNearest5(sellingRaw);
+        const sellingPrice = (typeof sellingFromBatch === 'number' && !isNaN(sellingFromBatch)) ? sellingFromBatch : roundUpToNearest5(unitPrice * 1.3);
         const profit = (sellingPrice - unitPrice) * qtyNum;
         const si = await client.query(
           `INSERT INTO sales_items (sale_id, inventory_id, qty, brand, unit_price, selling_price, profit)
@@ -153,7 +188,39 @@ router.post('/', async (req, res) => {
         insertedItems.push(si.rows[0]);
         total += sellingPrice * qtyNum;
       }
-      await client.query(`UPDATE inventory_items SET qty = qty - $1 WHERE inventory_id = $2`, [qtyNum, inventoryId]);
+      let needQty = qtyNum;
+      const hasDateFilter = typeof it.purchase_date === 'string' && it.purchase_date.length >= 10;
+      const batches = await client.query(
+        `SELECT pi.purchase_item_id, pi.remaining_qty, p.purchase_date
+         FROM purchase_items pi
+         JOIN purchases p ON p.purchase_id = pi.purchase_id
+         WHERE pi.product_id = $1 AND p.vendor_id = $2 AND (pi.brand IS NOT DISTINCT FROM $3)
+           AND COALESCE(pi.remaining_qty, 0) > 0
+           ${purchaseIdForItem ? 'AND pi.purchase_id = $4' : ''}
+           ${!purchaseIdForItem && hasDateFilter ? 'AND p.purchase_date = $4' : ''}
+         ORDER BY p.purchase_date ASC, pi.purchase_item_id ASC`,
+        purchaseIdForItem ? [productId, vendorId, brandToUse, purchaseIdForItem] : (hasDateFilter ? [productId, vendorId, brandToUse, (it.purchase_date as string).slice(0,10)] : [productId, vendorId, brandToUse])
+      );
+      let totalAvailable = 0;
+      for (const b of batches.rows) totalAvailable += Number(b.remaining_qty || 0);
+      if (needQty > totalAvailable) throw new Error('Insufficient stock');
+      for (const b of batches.rows) {
+        if (needQty <= 0) break;
+        const rem = Number(b.remaining_qty || 0);
+        if (rem <= 0) continue;
+        const consume = Math.min(rem, needQty);
+        await client.query(`UPDATE purchase_items SET remaining_qty = remaining_qty - $1 WHERE purchase_item_id = $2`, [consume, b.purchase_item_id]);
+        needQty -= consume;
+      }
+      await client.query(
+        `UPDATE inventory_items SET qty = (
+          SELECT COALESCE(SUM(pi.remaining_qty),0)
+          FROM purchase_items pi
+          JOIN purchases p ON p.purchase_id = pi.purchase_id
+          WHERE pi.product_id = $1 AND p.vendor_id = $2 AND (pi.brand IS NOT DISTINCT FROM $3)
+        ) WHERE inventory_id = $4`,
+        [productId, vendorId, brandToUse, inventoryId]
+      );
     }
 
     const finalTotal = total_amount ? Number(total_amount) : (discount ? Number((total * (1 - (Number(discount) / 100))).toFixed(2)) : total);

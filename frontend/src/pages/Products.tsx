@@ -12,9 +12,10 @@ export default function Products() {
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [items, setItems] = useState<Array<{ product_id: number; product_name: string; sku: string | null; category: string | null }>>([]);
   const [barcodeProductId, setBarcodeProductId] = useState<number | ''>('');
-  const [barcodePurchaseId, setBarcodePurchaseId] = useState<number | ''>('');
   const [barcodeBrand, setBarcodeBrand] = useState('');
   const [barcodeInvoice, setBarcodeInvoice] = useState('');
+  const [barcodeDate, setBarcodeDate] = useState('');
+  const [showInvoiceSuggest, setShowInvoiceSuggest] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterSku, setFilterSku] = useState('');
@@ -64,27 +65,43 @@ export default function Products() {
 
   useEffect(() => { fetchProducts(); }, []);
 
-  const [purchases, setPurchases] = useState<Array<{ purchase_id: number; invoice_no: string | null; vendor_id: number; vendor_name?: string | null; date: string }>>([]);
   const [barcodeProductQuery, setBarcodeProductQuery] = useState('');
   const [showBarcodeProductSuggest, setShowBarcodeProductSuggest] = useState(false);
-  const [barcodePurchaseQuery, setBarcodePurchaseQuery] = useState('');
-  const [showBarcodePurchaseSuggest, setShowBarcodePurchaseSuggest] = useState(false);
+  const [purchases, setPurchases] = useState<any[]>([]);
   const filteredBarcodeProducts = useMemo(() => {
     const q = barcodeProductQuery.toLowerCase();
     return items.filter(p => p.product_name.toLowerCase().includes(q) || String(p.product_id).includes(barcodeProductQuery.trim()));
   }, [items, barcodeProductQuery]);
-  const filteredBarcodePurchases = useMemo(() => {
-    const q = barcodePurchaseQuery.toLowerCase();
-    return purchases.filter(p => (p.invoice_no || '').toLowerCase().includes(q) || String(p.purchase_id).includes(barcodePurchaseQuery.trim()));
-  }, [purchases, barcodePurchaseQuery]);
   useEffect(() => {
     (async () => {
       try {
         const r = await get('/purchases');
-        setPurchases((r.purchases || []).map((p: any) => ({ purchase_id: p.purchase_id, invoice_no: p.invoice_no || null, vendor_id: p.vendor_id, vendor_name: p.vendor_name || null, date: p.date })));
+        setPurchases(r.purchases || []);
       } catch (err: any) { if (err?.status === 401) navigate('/login', { replace: true }); }
     })();
   }, []);
+
+  const invoiceSuggestions = useMemo(() => {
+    if (!barcodeDate) return [] as Array<{ invoice_no: string; label: string }>;
+    const dateStr = barcodeDate;
+    const nameOf = (pid: number) => items.find(pr => pr.product_id === pid)?.product_name || `Product ${pid}`;
+    const out: Array<{ invoice_no: string; label: string }> = [];
+    for (const p of purchases) {
+      if (String(p.date).slice(0,10) !== dateStr) continue;
+      const its = p.items || [];
+      const purchaseDate = String(p.date).slice(0,10);
+      if (barcodeProductId) {
+        const it = its.find((x: any) => x.product_id === barcodeProductId);
+        if (!it) continue;
+        out.push({ invoice_no: p.invoice_no || '', label: `${nameOf(it.product_id)} (Purchased: ${purchaseDate})` });
+      } else {
+        const first = its[0];
+        const nm = first ? nameOf(first.product_id) : '';
+        out.push({ invoice_no: p.invoice_no || '', label: `${nm} (Purchased: ${purchaseDate})` });
+      }
+    }
+    return out;
+  }, [purchases, barcodeDate, barcodeProductId, items]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -366,31 +383,28 @@ export default function Products() {
               </div>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', marginBottom: 6 }}>Search Purchase (invoice or ID)</label>
+              <label style={{ display: 'block', marginBottom: 6 }}>Invoice No (optional)</label>
               <div style={{ position: 'relative' }}>
                 <input
-                  placeholder="Search purchase"
-                  value={barcodePurchaseQuery}
-                  onChange={e=>{ 
-                    const v = e.target.value; 
-                    setBarcodePurchaseQuery(v); 
-                    setShowBarcodePurchaseSuggest(true);
-                    const num = Number(v);
-                    if (!isNaN(num) && num > 0) {
-                      const p = purchases.find(pp => pp.purchase_id === num);
-                      if (p) { setBarcodePurchaseId(p.purchase_id); setBarcodeInvoice(p.invoice_no || ''); setShowBarcodePurchaseSuggest(false); }
-                    }
-                  }}
-                  onFocus={()=>setShowBarcodePurchaseSuggest(true)}
-                  onBlur={()=>setTimeout(()=>setShowBarcodePurchaseSuggest(false), 150)}
-                  onKeyDown={e=>{ if (e.key === 'Enter' && filteredBarcodePurchases[0]) { const p=filteredBarcodePurchases[0]; setBarcodePurchaseId(p.purchase_id); setBarcodeInvoice(p.invoice_no || ''); setShowBarcodePurchaseSuggest(false); } }}
+                  value={barcodeInvoice}
+                  onChange={e=>setBarcodeInvoice(e.target.value)}
+                  onFocus={()=>setShowInvoiceSuggest(true)}
+                  onBlur={()=>setTimeout(()=>setShowInvoiceSuggest(false), 160)}
+                  onKeyDown={e=>{ if (e.key === 'Enter' && invoiceSuggestions[0]) { setBarcodeInvoice(invoiceSuggestions[0].invoice_no); setShowInvoiceSuggest(false); } }}
+                  placeholder="e.g., INV-123"
                   style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
                 />
-                {showBarcodePurchaseSuggest && barcodePurchaseQuery && filteredBarcodePurchases.length > 0 && (
+                {showInvoiceSuggest && invoiceSuggestions.length > 0 && (
                   <div style={{ position: 'absolute', left: 0, right: 0, top: '100%', background: '#fff', border: '1px solid #d9a1aa', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', zIndex: 10, maxHeight: 180, overflowY: 'auto' }}>
-                    {filteredBarcodePurchases.map(p => (
-                      <div key={p.purchase_id} onMouseDown={()=>{ setBarcodePurchaseId(p.purchase_id); setBarcodeInvoice(p.invoice_no || ''); setShowBarcodePurchaseSuggest(false); }} style={{ padding: '8px 12px', cursor: 'pointer' }} onMouseEnter={e=>{ e.currentTarget.style.background = '#f7f1f2'; }} onMouseLeave={e=>{ e.currentTarget.style.background = '#fff'; }}>
-                        {(p.invoice_no || '-')} {p.vendor_name ? `(${p.vendor_name})` : ''} [ID: {p.purchase_id}]
+                    {invoiceSuggestions.map(s => (
+                      <div
+                        key={`${s.invoice_no}-${s.label}`}
+                        onMouseDown={()=>{ setBarcodeInvoice(s.invoice_no); setShowInvoiceSuggest(false); }}
+                        style={{ padding: '8px 12px', cursor: 'pointer' }}
+                        onMouseEnter={e=>{ e.currentTarget.style.background = '#f7f1f2'; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.background = '#fff'; }}
+                      >
+                        {s.label}
                       </div>
                     ))}
                   </div>
@@ -398,17 +412,18 @@ export default function Products() {
               </div>
             </div>
             <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 6 }}>Date</label>
+              <input type="date" value={barcodeDate} onChange={e=>setBarcodeDate(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#fff', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', marginBottom: 6 }}>Brand (optional)</label>
               <input value={barcodeBrand} onChange={e=>setBarcodeBrand(e.target.value)} placeholder="e.g., Astra" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', marginBottom: 6 }}>Invoice No (from purchase)</label>
-              <input value={barcodeInvoice} readOnly style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#f7f7f7', boxSizing: 'border-box' }} />
-            </div>
+            
             <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', marginBottom: 6 }}>Barcode (auto-generated)</label>
               <input
-                value={(barcodeProductId && barcodePurchaseId) ? (()=>{ const pid = barcodeProductId; const puid = barcodePurchaseId; const b = (barcodeBrand || '').replace(/\s+/g, ''); const inv = barcodeInvoice ? String(barcodeInvoice).replace(/\s+/g, '').toUpperCase() : ''; return `BC-${pid}-${puid}${b ? '-' + b : ''}${inv ? '-' + inv : ''}`; })() : ''}
+                value={barcodeProductId ? (()=>{ const pid = barcodeProductId; const b = (barcodeBrand || '').replace(/\s+/g, ''); const inv = barcodeInvoice ? String(barcodeInvoice).replace(/\s+/g, '').toUpperCase() : ''; const d = barcodeDate ? String(barcodeDate).replace(/-/g,'') : ''; return `BC-${pid}${b ? '-' + b : ''}${inv ? '-' + inv : ''}${d ? '-' + d : ''}`; })() : ''}
                 readOnly
                 style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#f7f7f7', boxSizing: 'border-box' }}
               />
@@ -416,19 +431,19 @@ export default function Products() {
             <button
               onClick={async () => {
                 const pid = barcodeProductId === '' ? 0 : barcodeProductId;
-                const puid = barcodePurchaseId === '' ? 0 : barcodePurchaseId;
-                if (!pid || !puid) { alert('Select product and purchase'); return; }
+                if (!pid) { alert('Select product'); return; }
                 try {
                   const b = (barcodeBrand || '').replace(/\s+/g, '');
                   const inv = barcodeInvoice ? String(barcodeInvoice).replace(/\s+/g, '').toUpperCase() : '';
-                  const bcStr = `BC-${pid}-${puid}${b ? '-' + b : ''}${inv ? '-' + inv : ''}`;
-                  const data = await post('/barcode', { product_id: pid, purchase_id: puid, invoice_no: barcodeInvoice || undefined, barcode: bcStr });
+                  const d = barcodeDate ? String(barcodeDate).replace(/-/g,'') : '';
+                  const bcStr = `BC-${pid}${b ? '-' + b : ''}${inv ? '-' + inv : ''}${d ? '-' + d : ''}`;
+                  const data = await post('/barcode', { product_id: pid, invoice_no: barcodeInvoice || undefined, brand: barcodeBrand || undefined, date: barcodeDate || undefined, barcode: bcStr });
                   setConfirmVisible(true);
                   setTimeout(() => setConfirmVisible(false), 700);
                   setBarcodeProductId('');
-                  setBarcodePurchaseId('');
                   setBarcodeBrand('');
                   setBarcodeInvoice('');
+                  setBarcodeDate('');
                 } catch (err: any) {
                   alert(err?.message || 'Failed to generate barcode');
                 }

@@ -21,6 +21,8 @@ export default function Purchase() {
   const [billPrice, setBillPrice] = useState<string>('');
   const [qty, setQty] = useState<string>('');
   const [brand, setBrand] = useState('');
+  const [sellingPriceInput, setSellingPriceInput] = useState('');
+  const [sellingEdited, setSellingEdited] = useState(false);
   const [error, setError] = useState('');
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [vendors, setVendors] = useState<Array<{ vendor_id: number; name: string }>>([]);
@@ -61,6 +63,25 @@ export default function Purchase() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!showForm) return;
+    const today = new Date().toISOString().slice(0,10);
+    setDate(prev => prev || today);
+    const nextInvoice = (() => {
+      let maxNum = 0; let preferPrefix = 'INV-';
+      for (const p of purchases) {
+        const inv = p.invoice_no || '';
+        const m = inv.match(/^(.*?)(\d+)$/);
+        if (m) {
+          const n = Number(m[2]);
+          if (!isNaN(n) && n >= maxNum) { maxNum = n; preferPrefix = m[1]; }
+        }
+      }
+      return `${preferPrefix}${maxNum + 1}`;
+    })();
+    setInvoiceNo(prev => prev || nextInvoice);
+  }, [showForm, purchases]);
+
   const filteredVendors = useMemo(() => vendors.filter(v => v.name.toLowerCase().includes(vendorQuery.toLowerCase())), [vendors, vendorQuery]);
   const filteredProducts = useMemo(() => {
     const q = productQuery.toLowerCase();
@@ -73,6 +94,32 @@ export default function Purchase() {
     setSelectedSku(sku);
     setQtyUnit(sku === 'Grams' ? 'Grams' : 'PCS');
   }, [productId, products]);
+
+  const effectiveQty = useMemo(() => {
+    const q = Number(qty);
+    if (!q || isNaN(q)) return 0;
+    if (selectedSku === 'Grams') {
+      return qtyUnit === 'KG' ? q * 1000 : q;
+    }
+    return q;
+  }, [qty, selectedSku, qtyUnit]);
+
+  const unitPriceCalc = useMemo(() => {
+    const totalNum = Number(billPrice);
+    if (!totalNum || isNaN(totalNum) || effectiveQty <= 0) return '';
+    return Number((totalNum / effectiveQty).toFixed(2));
+  }, [billPrice, effectiveQty]);
+
+  const sellingPriceCalc = useMemo(() => {
+    if (typeof unitPriceCalc !== 'number' || isNaN(unitPriceCalc) || unitPriceCalc <= 0) return '';
+    return Number((unitPriceCalc * 1.3).toFixed(2));
+  }, [unitPriceCalc]);
+
+  useEffect(() => {
+    if (!sellingEdited) {
+      setSellingPriceInput(sellingPriceCalc === '' ? '' : String(sellingPriceCalc));
+    }
+  }, [sellingPriceCalc, sellingEdited]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -93,6 +140,8 @@ export default function Purchase() {
         bill_price: totalNum,
         qty: effectiveQty,
         brand: brand || undefined,
+        unit_price: unitPriceCalc === '' ? undefined : Number(unitPriceCalc),
+        selling_price: sellingPriceInput ? Number(Number(sellingPriceInput).toFixed(2)) : undefined,
       };
       await post('/purchases', payload);
       try { const r = await get('/purchases'); setPurchases(r.purchases || []); } catch {}
@@ -292,6 +341,14 @@ export default function Purchase() {
                     )}
                   </select>
                 </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', marginBottom: 6 }}>Unit Price (auto)</label>
+                <input value={unitPriceCalc === '' ? '' : String(unitPriceCalc)} readOnly style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#f7f7f7', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', marginBottom: 6 }}>Selling Price (+30%, editable)</label>
+                <input value={sellingPriceInput} onChange={e=>{ setSellingEdited(true); setSellingPriceInput(e.target.value); }} type="number" step="0.01" style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Brand</label>
