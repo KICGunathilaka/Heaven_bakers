@@ -93,11 +93,11 @@ export default function Products() {
       if (barcodeProductId) {
         const it = its.find((x: any) => x.product_id === barcodeProductId);
         if (!it) continue;
-        out.push({ invoice_no: p.invoice_no || '', label: `${nameOf(it.product_id)} (Purchased: ${purchaseDate})` });
+        out.push({ invoice_no: p.invoice_no || '', label: `${nameOf(it.product_id)}${it.brand ? ` (${it.brand})` : ''} (Purchased: ${purchaseDate})` });
       } else {
         const first = its[0];
         const nm = first ? nameOf(first.product_id) : '';
-        out.push({ invoice_no: p.invoice_no || '', label: `${nm} (Purchased: ${purchaseDate})` });
+        out.push({ invoice_no: p.invoice_no || '', label: `${nm}${first?.brand ? ` (${first.brand})` : ''} (Purchased: ${purchaseDate})` });
       }
     }
     return out;

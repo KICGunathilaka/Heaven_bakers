@@ -322,6 +322,23 @@ export default function Dashboard() {
         >
           Reports
         </button>
+        <button
+          onClick={goLoyalty}
+          style={{
+            background: gold,
+            color: '#000',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000' }}
+          onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000' }}
+        >
+          Loyalty
+        </button>
         
         <div style={{ flex: 1 }} />
         <button
@@ -359,9 +376,9 @@ export default function Dashboard() {
           Logout
         </button>
       </div>
-      <div style={{ padding: 24 }}>
+      <div style={{ padding: '0 24px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ color: roseGold, fontSize: 32, fontWeight: 800 }}>Dashboard</h2>
+          <h2 style={{ color: roseGold, fontSize: 32, fontWeight: 800, margin: 0 }}>Dashboard</h2>
           <button
             onClick={refreshData}
             disabled={refreshing}
@@ -382,7 +399,7 @@ export default function Dashboard() {
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 0 }}>
           <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #bbdefb, #64b5f6)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: roseGold, fontWeight: 700, opacity: 0.9 }}>Today Sales</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: '#333' }}>Rs. {fmt(todaySales)}</div>

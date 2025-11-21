@@ -25,10 +25,11 @@ export default function Sales() {
   const [note, setNote] = useState('');
   const [inventory, setInventory] = useState<Array<{ inventory_id: number; product_id: number; product_name: string | null; vendor_name: string | null; brand: string | null; sku: string | null; qty: number | string; purchase_date: string | null }>>([]);
   const [error, setError] = useState('');
-  const [items, setItems] = useState<Array<{ inventory_id: number | null; invQuery: string; showSuggest: boolean; sku: string | null; qtyUnit: 'Grams' | 'KG' | 'PCS'; qty: string; brand: string; unitPrice: number | null; sellingPrice: number | null; barcode: string | null; purchase_date: string | null }>>([
-    { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null }
+  const [items, setItems] = useState<Array<{ inventory_id: number | null; invQuery: string; showSuggest: boolean; sku: string | null; qtyUnit: 'Grams' | 'KG' | 'PCS'; qty: string; brand: string; unitPrice: number | null; sellingPrice: number | null; barcode: string | null; purchase_date: string | null; availableQty: number | null }>>([
+    { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null, availableQty: null }
   ]);
   const [sales, setSales] = useState<Array<{ sale_id: number; sale_invoice_no: string | null; date: string; total_amount: number | null; discount: number | null; note: string | null; customer_name: string | null; items: Array<{ sales_item_id: number; inventory_id: number; qty: number; brand: string | null; unit_price: number | null; selling_price: number | null; profit: number | null }> }>>([]);
+  const [latestInvoiceNo, setLatestInvoiceNo] = useState<string | null>(null);
   const [fInvoice, setFInvoice] = useState('');
   const [fCustomer, setFCustomer] = useState('');
   const [fContact, setFContact] = useState('');
@@ -69,6 +70,18 @@ export default function Sales() {
   }
   function goHome() { navigate('/dashboard'); }
 
+  function computeNextInvoice(prev: string | null) {
+    const p = (prev || '').toString().trim();
+    const m = /(.*?)(\d+)\s*$/.exec(p);
+    if (!m) return 'INV-1';
+    const prefix = m[1];
+    const numStr = m[2];
+    const num = Number(numStr);
+    const inc = isNaN(num) ? 1 : (num + 1);
+    const padded = String(inc).padStart(numStr.length, '0');
+    return `${prefix}${padded}`;
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -80,6 +93,8 @@ export default function Sales() {
       try {
         const r = await get('/sales');
         const rows: any[] = r.sales || [];
+        const latest = rows.find(row => row.sale_invoice_no)?.sale_invoice_no || null;
+        setLatestInvoiceNo(latest);
         const map: Record<number, any> = {};
         for (const row of rows) {
           if (!map[row.sale_id]) {
@@ -114,6 +129,17 @@ export default function Sales() {
     })();
   }, [navigate]);
 
+  useEffect(() => {
+    if (showForm) {
+      if (!invoiceNo || invoiceNo.trim().length === 0) {
+        setInvoiceNo(computeNextInvoice(latestInvoiceNo));
+      }
+      if (!date || date.trim().length === 0) {
+        setDate(new Date().toLocaleDateString('en-CA'));
+      }
+    }
+  }, [showForm, latestInvoiceNo]);
+
   function filteredFor(q: string) {
     const vv = (q || '').trim();
     if (/^\d+(?:\s*,\s*\d+)*$/.test(vv)) {
@@ -138,10 +164,12 @@ export default function Sales() {
   async function pickInventory(i: { inventory_id: number; product_name: string | null; brand: string | null; sku?: string | null; purchase_date?: string | null }, row?: number) {
     if (typeof row === 'number') {
       const sku = i.sku ?? null;
+      const invMatch = inventory.find(r => r.inventory_id === i.inventory_id);
+      const avail = invMatch ? Number(invMatch.qty as any) : null;
       setItems(prev => prev.map((it, idx) => {
         if (idx !== row) return it;
         const pd = i.purchase_date ? (() => { const d2 = new Date(i.purchase_date as string); return isNaN(d2.getTime()) ? String(i.purchase_date).slice(0,10) : d2.toLocaleDateString('en-CA'); })() : null;
-        return { ...it, inventory_id: i.inventory_id, invQuery: `${i.product_name || ''} ${i.brand ? `(${i.brand})` : ''}`.trim(), showSuggest: false, sku, qtyUnit: sku === 'Grams' ? 'Grams' : 'PCS', brand: i.brand || '', purchase_date: pd };
+        return { ...it, inventory_id: i.inventory_id, invQuery: `${i.product_name || ''} ${i.brand ? `(${i.brand})` : ''}`.trim(), showSuggest: false, sku, qtyUnit: sku === 'Grams' ? 'Grams' : 'PCS', brand: i.brand || '', purchase_date: pd, availableQty: (avail !== null && !isNaN(avail)) ? avail : null };
       }));
       try {
         const dLocal = i.purchase_date ? (() => { const d3 = new Date(i.purchase_date as string); return isNaN(d3.getTime()) ? String(i.purchase_date).slice(0,10) : d3.toLocaleDateString('en-CA'); })() : null;
@@ -216,7 +244,7 @@ export default function Sales() {
         }
         setSales(Object.values(map));
       } catch {}
-      setInvoiceNo(''); setCustomerName(''); setContactNo(''); setAddress(''); setDate(''); setDiscount(''); setNote(''); setItems([{ inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null }]); setShowForm(false);
+      setInvoiceNo(''); setCustomerName(''); setContactNo(''); setAddress(''); setDate(''); setDiscount(''); setNote(''); setItems([{ inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null, availableQty: null }]); setShowForm(false);
       try { localStorage.removeItem('sales_form_cache'); } catch {}
     } catch (err: any) {
       if (err?.status === 401) { localStorage.removeItem('token'); navigate('/login', { replace: true }); return; }
@@ -279,7 +307,7 @@ export default function Sales() {
       <div style={{ padding: 24 }}>
         <div style={{ marginBottom: 16 }}>
           <button
-            onClick={() => setShowForm(v => !v)}
+            onClick={() => setShowForm(v => { const nv = !v; if (!v) { const todayStr = new Date().toLocaleDateString('en-CA'); if (!invoiceNo) { const p = (latestInvoiceNo || '').toString().trim(); const m = /(.*?)(\d+)\s*$/.exec(p); const next = m ? `${m[1]}${String((Number(m[2])||0)+1).padStart(m[2].length, '0')}` : 'INV-1'; setInvoiceNo(next); } if (!date) setDate(todayStr); } return nv; })}
             style={{ background: gold, color: '#fff', border: 'none', padding: '8px 16px', borderRadius: 8, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}
             onMouseEnter={e => (e.currentTarget.style.background = goldHover)}
             onMouseLeave={e => (e.currentTarget.style.background = gold)}
@@ -320,7 +348,7 @@ export default function Sales() {
               <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontWeight: 600, color: roseGold }}>Products</div>
-                  <button type="button" onClick={() => setItems(prev => [...prev, { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null }])} style={{ background: gold, color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>Add Product</button>
+                  <button type="button" onClick={() => setItems(prev => [...prev, { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null, availableQty: null }])} style={{ background: gold, color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>Add Product</button>
                 </div>
                 {items.map((it, idx) => (
                   <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 8, alignItems: 'flex-end', marginBottom: 8 }}>
@@ -330,8 +358,8 @@ export default function Sales() {
                         <input
                           placeholder="Search product, brand, SKU, or ID"
                           value={it.invQuery}
-                          onChange={async e=>{ const v = e.target.value; setItems(prev => prev.map((x, i) => i === idx ? { ...x, invQuery: v, showSuggest: true } : x)); const vv = v.trim(); if (vv.toUpperCase().startsWith('BC-')) { try { const r = await get(`/barcode/${encodeURIComponent(vv)}/pricing`); if (r?.inventory_id) { await pickInventory({ inventory_id: r.inventory_id, product_name: r.product_name, brand: r.brand, sku: r.sku }, idx); } const unit = (r?.unit_price !== undefined && r?.unit_price !== null) ? Number(r.unit_price) : null; const sell = (r?.selling_price !== undefined && r?.selling_price !== null) ? Number(r.selling_price) : (unit !== null ? (r.sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null); setItems(prev => prev.map((x, i) => i === idx ? { ...x, inventory_id: (r.inventory_id ?? x.inventory_id ?? null), invQuery: `${r.product_name || ''}${(r.brand || x.brand) ? ` (${r.brand || x.brand})` : ''}`.trim(), showSuggest: false, sku: r.sku || x.sku || null, qtyUnit: ((r.sku || x.sku) === 'Grams' ? 'Grams' : 'PCS'), brand: r.brand || x.brand || '', unitPrice: unit ?? x.unitPrice ?? null, sellingPrice: sell ?? x.sellingPrice ?? null, barcode: vv } : x)); } catch {} } }}
-                          onPaste={async e=>{ e.preventDefault(); e.stopPropagation(); const text = (e.clipboardData?.getData('text') || '').trim(); if (text && text.toUpperCase().startsWith('BC-')) { try { const r = await get(`/barcode/${encodeURIComponent(text)}/pricing`); if (r?.inventory_id) { await pickInventory({ inventory_id: r.inventory_id, product_name: r.product_name, brand: r.brand, sku: r.sku }, idx); } const unit = (r?.unit_price !== undefined && r?.unit_price !== null) ? Number(r.unit_price) : null; const sell = (r?.selling_price !== undefined && r?.selling_price !== null) ? Number(r.selling_price) : (unit !== null ? (r.sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null); setItems(prev => prev.map((x, i) => i === idx ? { ...x, inventory_id: (r.inventory_id ?? x.inventory_id ?? null), invQuery: `${r.product_name || ''}${(r.brand || x.brand) ? ` (${r.brand || x.brand})` : ''}`.trim(), showSuggest: false, sku: r.sku || x.sku || null, qtyUnit: ((r.sku || x.sku) === 'Grams' ? 'Grams' : 'PCS'), brand: r.brand || x.brand || '', unitPrice: unit ?? x.unitPrice ?? null, sellingPrice: sell ?? x.sellingPrice ?? null, barcode: text } : x)); } catch {} } }}
+                          onChange={async e=>{ const v = e.target.value; setItems(prev => prev.map((x, i) => i === idx ? { ...x, invQuery: v, showSuggest: true } : x)); const vv = v.trim(); if (vv.toUpperCase().startsWith('BC-')) { try { const r = await get(`/barcode/${encodeURIComponent(vv)}/pricing`); if (r?.inventory_id) { await pickInventory({ inventory_id: r.inventory_id, product_name: r.product_name, brand: r.brand, sku: r.sku }, idx); } const unit = (r?.unit_price !== undefined && r?.unit_price !== null) ? Number(r.unit_price) : null; const sell = (r?.selling_price !== undefined && r?.selling_price !== null) ? Number(r.selling_price) : (unit !== null ? (r.sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null); const match = r?.inventory_id ? inventory.find(rr => rr.inventory_id === r.inventory_id) : null; const availQty = match ? Number(match.qty as any) : null; setItems(prev => prev.map((x, i) => i === idx ? { ...x, inventory_id: (r.inventory_id ?? x.inventory_id ?? null), invQuery: `${r.product_name || ''}${(r.brand || x.brand) ? ` (${r.brand || x.brand})` : ''}`.trim(), showSuggest: false, sku: r.sku || x.sku || null, qtyUnit: ((r.sku || x.sku) === 'Grams' ? 'Grams' : 'PCS'), brand: r.brand || x.brand || '', unitPrice: unit ?? x.unitPrice ?? null, sellingPrice: sell ?? x.sellingPrice ?? null, barcode: vv, purchase_date: (r.purchase_date ? String(r.purchase_date).slice(0,10) : (x.purchase_date ?? null)), availableQty: (availQty !== null && !isNaN(availQty)) ? availQty : (x.availableQty ?? null) } : x)); } catch {} } }}
+                          onPaste={async e=>{ e.preventDefault(); e.stopPropagation(); const text = (e.clipboardData?.getData('text') || '').trim(); if (text && text.toUpperCase().startsWith('BC-')) { try { const r = await get(`/barcode/${encodeURIComponent(text)}/pricing`); if (r?.inventory_id) { await pickInventory({ inventory_id: r.inventory_id, product_name: r.product_name, brand: r.brand, sku: r.sku }, idx); } const unit = (r?.unit_price !== undefined && r?.unit_price !== null) ? Number(r.unit_price) : null; const sell = (r?.selling_price !== undefined && r?.selling_price !== null) ? Number(r.selling_price) : (unit !== null ? (r.sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null); const match = r?.inventory_id ? inventory.find(rr => rr.inventory_id === r.inventory_id) : null; const availQty = match ? Number(match.qty as any) : null; setItems(prev => prev.map((x, i) => i === idx ? { ...x, inventory_id: (r.inventory_id ?? x.inventory_id ?? null), invQuery: `${r.product_name || ''}${(r.brand || x.brand) ? ` (${r.brand || x.brand})` : ''}`.trim(), showSuggest: false, sku: r.sku || x.sku || null, qtyUnit: ((r.sku || x.sku) === 'Grams' ? 'Grams' : 'PCS'), brand: r.brand || x.brand || '', unitPrice: unit ?? x.unitPrice ?? null, sellingPrice: sell ?? x.sellingPrice ?? null, barcode: text, purchase_date: (r.purchase_date ? String(r.purchase_date).slice(0,10) : (x.purchase_date ?? null)), availableQty: (availQty !== null && !isNaN(availQty)) ? availQty : (x.availableQty ?? null) } : x)); } catch {} } }}
                           onFocus={()=>setItems(prev => prev.map((x, i) => i === idx ? { ...x, showSuggest: true } : x))}
                           onBlur={()=>setTimeout(()=>setItems(prev => prev.map((x, i) => i === idx ? { ...x, showSuggest: false } : x)), 150)}
                           style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }}
@@ -350,10 +378,10 @@ export default function Sales() {
                     <div>
                       <label style={{ display: 'block', marginBottom: 6 }}>Qty {it.sku ? `(${it.sku})` : ''}</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input type="number" step="0.01" value={it.qty} onChange={e=>{ const v = e.target.value; setItems(prev => prev.map((x, i) => i === idx ? { ...x, qty: v } : x)); }} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                        <input type="number" step={(it.sku || '') === 'PCS' ? 1 : 0.01} value={it.qty} onChange={e=>{ const vStr = e.target.value; const vNum = Number(vStr || 0); const avail = it.availableQty ?? null; let nextQtyStr = vStr; if (!isNaN(vNum) && avail !== null && !isNaN(avail)) { if ((it.sku || '') === 'Grams') { const eff = it.qtyUnit === 'KG' ? vNum * 1000 : vNum; const clampedEff = Math.min(eff, avail); nextQtyStr = it.qtyUnit === 'KG' ? String(clampedEff / 1000) : String(clampedEff); } else { const clamped = Math.min(vNum, avail); nextQtyStr = String(clamped); } } setItems(prev => prev.map((x, i) => i === idx ? { ...x, qty: nextQtyStr } : x)); }} max={(() => { const avail = it.availableQty ?? null; if (avail === null || isNaN(avail)) return undefined; if ((it.sku || '') === 'Grams') { return it.qtyUnit === 'KG' ? Number((avail / 1000).toFixed(3)) : avail; } return avail; })()} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
                         <select
                           value={it.qtyUnit}
-                          onChange={e=>{ const v = e.target.value as any; setItems(prev => prev.map((x, i) => i === idx ? { ...x, qtyUnit: v } : x)); }}
+                          onChange={e=>{ const v = e.target.value as any; setItems(prev => prev.map((x, i) => { if (i !== idx) return x; const curNum = Number(x.qty || 0); if ((x.sku || '') === 'Grams') { const eff = x.qtyUnit === 'KG' ? curNum * 1000 : curNum; const nextQty = v === 'KG' ? eff / 1000 : eff; const avail = x.availableQty ?? null; const clampedEff = (avail !== null && !isNaN(avail)) ? Math.min(eff, avail) : eff; const nextQtyClamped = v === 'KG' ? clampedEff / 1000 : clampedEff; return { ...x, qtyUnit: v, qty: String(nextQtyClamped) }; } return { ...x, qtyUnit: v }; })); }}
                           style={{ width: 120, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#fff' }}
                           disabled={it.sku !== 'Grams'}
                         >

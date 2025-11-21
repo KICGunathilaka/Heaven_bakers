@@ -55,20 +55,35 @@ router.get('/:barcode/pricing', async (req, res) => {
   const code = (req.params.barcode || '').trim();
   if (!code) return res.status(400).send('Missing barcode');
   try {
-    const br = await pool.query(`SELECT product_id, invoice_no, brand FROM barcode WHERE barcode = $1`, [code]);
+    const br = await pool.query(`SELECT product_id, invoice_no, brand, purchase_date FROM barcode WHERE barcode = $1`, [code]);
     let productId: number | null = null;
     let invoiceNo: string | null = null;
     let brandFromCode: string | null = null;
+    let dateFromCode: string | null = null;
     if (br.rows[0]) {
       productId = br.rows[0].product_id;
       invoiceNo = br.rows[0].invoice_no || null;
       brandFromCode = br.rows[0].brand || null;
+      dateFromCode = br.rows[0].purchase_date ? String(br.rows[0].purchase_date).slice(0,10) : null;
     }
+
+    if (!productId) return res.status(404).send('Barcode not found');
 
     let pr = null as any;
     if (invoiceNo) {
-      const r2 = await pool.query(`SELECT purchase_id, vendor_id, invoice_no FROM purchases WHERE invoice_no = $1 ORDER BY purchase_id DESC LIMIT 1`, [invoiceNo]);
+      const r2 = await pool.query(`SELECT purchase_id, vendor_id, invoice_no, purchase_date FROM purchases WHERE invoice_no = $1 ORDER BY purchase_id DESC LIMIT 1`, [invoiceNo]);
       pr = r2.rows[0] || null;
+    }
+    if (!pr && dateFromCode) {
+      const r3 = await pool.query(`
+        SELECT p.purchase_id, p.vendor_id, p.purchase_date
+        FROM purchases p
+        JOIN purchase_items pi ON pi.purchase_id = p.purchase_id
+        WHERE p.purchase_date = $1 AND pi.product_id = $2
+        ORDER BY p.purchase_id DESC
+        LIMIT 1
+      `, [dateFromCode, productId]);
+      pr = r3.rows[0] || null;
     }
     if (!pr) return res.status(404).send('Purchase not found');
     const vendorId = pr.vendor_id;
@@ -129,7 +144,8 @@ router.get('/:barcode/pricing', async (req, res) => {
       brand: brand,
       sku,
       unit_price: unit,
-      selling_price: selling
+      selling_price: selling,
+      purchase_date: pr.purchase_date ? String(pr.purchase_date).slice(0,10) : (dateFromCode || null)
     });
   } catch (e: any) {
     res.status(500).send(e?.message || 'Server error');
