@@ -9,7 +9,7 @@ const goldHover = '#c9a227';
 
 export default function Inventory() {
   const navigate = useNavigate();
-  const [inventory, setInventory] = useState<Array<{ inventory_id: number; product_id: number; product_name: string | null; sku: string | null; vendor_id: number; vendor_name: string | null; brand: string | null; qty: number | string }>>([]);
+  const [inventory, setInventory] = useState<Array<{ purchase_item_id: number; inventory_id: number; product_id: number; product_name: string | null; sku: string | null; vendor_id: number; vendor_name: string | null; brand: string | null; qty: number | string; purchase_date: string | null }>>([]);
   const [qProduct, setQProduct] = useState('');
   const [qVendor, setQVendor] = useState('');
   const [qBrand, setQBrand] = useState('');
@@ -110,9 +110,11 @@ export default function Inventory() {
               return { value: q.toFixed(2), unit: '' };
             })();
             return (
-              <div key={i.inventory_id} style={{ borderRadius: 10, padding: 14, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
+              <div key={i.purchase_item_id || i.inventory_id} style={{ borderRadius: 10, padding: 14, background: 'linear-gradient(135deg, #f8e7a5, #fff)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: roseGold }}>{i.product_name || 'Unknown'}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: roseGold }}>
+                    {(i.product_name || 'Unknown')}{i.purchase_date ? ` (Purchased: ${(() => { const d = new Date(i.purchase_date as string); return isNaN(d.getTime()) ? String(i.purchase_date).slice(0,10) : d.toLocaleDateString('en-CA'); })()})` : ''}
+                  </div>
                   <div style={{ background: roseGoldLight, color: '#222', borderRadius: 18, padding: '6px 12px', fontWeight: 700, minWidth: 120, textAlign: 'center' }}>
                     {disp.value} {disp.unit}
                   </div>

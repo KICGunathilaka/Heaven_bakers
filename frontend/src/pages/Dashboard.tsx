@@ -58,6 +58,17 @@ export default function Dashboard() {
   const [purchases, setPurchases] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function refreshData() {
+    setRefreshing(true);
+    try { const r = await get('/sales'); setSalesRows(r.sales || []); } catch { setSalesRows([]); }
+    try { const r = await get('/expenses'); setExpensesRows(r.expenses || []); } catch { setExpensesRows([]); }
+    try { const r = await get('/purchases'); setPurchases(r.purchases || []); } catch { setPurchases([]); }
+    try { const r = await get('/inventory'); setInventory(r.inventory || []); } catch { setInventory([]); }
+    try { const r = await get('/products'); setProducts(r.products || []); } catch { setProducts([]); }
+    setRefreshing(false);
+  }
 
   useEffect(() => {
     (async () => {
@@ -349,7 +360,28 @@ export default function Dashboard() {
         </button>
       </div>
       <div style={{ padding: 24 }}>
-        <h2 style={{ color: roseGold, fontSize: 32, fontWeight: 800 }}>Dashboard</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ color: roseGold, fontSize: 32, fontWeight: 800 }}>Dashboard</h2>
+          <button
+            onClick={refreshData}
+            disabled={refreshing}
+            style={{
+              background: gold,
+              color: '#000',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: 8,
+              fontWeight: 700,
+              cursor: refreshing ? 'not-allowed' : 'pointer',
+              opacity: refreshing ? 0.7 : 1,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+            }}
+            onMouseEnter={e => { if (!refreshing) { e.currentTarget.style.background = goldHover; e.currentTarget.style.color = '#000'; } }}
+            onMouseLeave={e => { e.currentTarget.style.background = gold; e.currentTarget.style.color = '#000'; }}
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 12 }}>
           <div style={{ padding: 18, borderRadius: 14, background: `linear-gradient(135deg, #bbdefb, #64b5f6)`, boxShadow: '0 6px 18px rgba(0,0,0,0.08)' }}>
             <div style={{ color: roseGold, fontWeight: 700, opacity: 0.9 }}>Today Sales</div>

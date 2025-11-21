@@ -16,29 +16,26 @@ router.post('/', async (req, res) => {
     return res.status(401).send('Unauthorized');
   }
 
-  const { product_id, purchase_id, invoice_no, barcode } = req.body as { product_id?: number; purchase_id?: number; invoice_no?: string; barcode?: string };
-  if (!product_id || !purchase_id) return res.status(400).send('Missing product_id or purchase_id');
+  const { product_id, invoice_no, date, brand, barcode } = req.body as { product_id?: number; invoice_no?: string; date?: string; brand?: string; barcode?: string };
+  if (!product_id) return res.status(400).send('Missing product_id');
   try {
-    const pr = await pool.query(`SELECT purchase_id, invoice_no FROM purchases WHERE purchase_id = $1`, [purchase_id]);
-    if (!pr.rows[0]) return res.status(400).send('Invalid purchase_id');
-    const dbInvoice = pr.rows[0].invoice_no || null;
-    if (invoice_no && dbInvoice && String(invoice_no) !== String(dbInvoice)) {
-      return res.status(400).send('Invoice mismatch');
-    }
+    let dbInvoice: string | null = null;
     let code = (barcode || '').trim();
     if (!code) {
       const cleanInv = (invoice_no || dbInvoice || '').toString().replace(/\s+/g, '').toUpperCase();
-      code = `BC-${product_id}-${purchase_id}${cleanInv ? '-' + cleanInv : ''}`;
+      const datePart = date ? (()=>{ const d = new Date(date); if (isNaN(d.getTime())) return ''; return d.toISOString().slice(0,10).replace(/-/g,''); })() : '';
+      const brandPart = (brand || '').toString().replace(/\s+/g,'');
+      code = `BC-${product_id}${brandPart ? '-' + brandPart : ''}${cleanInv ? '-' + cleanInv : ''}${datePart ? '-' + datePart : ''}`;
     }
     const r = await pool.query(
-      `INSERT INTO barcode (product_id, purchase_id, invoice_no, barcode) VALUES ($1, $2, $3, $4)
-       RETURNING barcode_id, product_id, purchase_id, invoice_no, barcode, created_at`,
-      [product_id, purchase_id, (invoice_no || dbInvoice || null), code]
+      `INSERT INTO barcode (product_id, invoice_no, brand, purchase_date, barcode) VALUES ($1, $2, $3, $4, $5)
+       RETURNING barcode_id, product_id, invoice_no, brand, purchase_date, barcode, created_at`,
+      [product_id, (invoice_no || dbInvoice || null), (brand || null), (date ? new Date(date) : null), code]
     );
     res.json({ barcode: r.rows[0] });
   } catch (e: any) {
     if (e?.code === '23503') {
-      return res.status(400).send('Invalid product_id or purchase_id');
+      return res.status(400).send('Invalid product_id');
     }
     if (e?.code === '23505') {
       return res.status(409).send('Barcode already exists');
@@ -58,53 +55,32 @@ router.get('/:barcode/pricing', async (req, res) => {
   const code = (req.params.barcode || '').trim();
   if (!code) return res.status(400).send('Missing barcode');
   try {
-    const br = await pool.query(`SELECT product_id, purchase_id, invoice_no FROM barcode WHERE barcode = $1`, [code]);
+    const br = await pool.query(`SELECT product_id, invoice_no, brand FROM barcode WHERE barcode = $1`, [code]);
     let productId: number | null = null;
-    let purchaseId: number | null = null;
     let invoiceNo: string | null = null;
     let brandFromCode: string | null = null;
-    const mBrand = /^BC-(\d+)-(\d+)-([^-]+)-(.*)$/.exec(code);
-    const mInvoiceOnly = /^BC-(\d+)-(\d+)-(.*)$/.exec(code);
-    const mBasic = /^BC-(\d+)-(\d+)$/.exec(code);
-    if (mBrand) {
-      productId = Number(mBrand[1]);
-      purchaseId = Number(mBrand[2]);
-      brandFromCode = (mBrand[3] || '').trim() || null;
-      invoiceNo = (mBrand[4] || '').trim() || null;
-    } else if (mInvoiceOnly) {
-      productId = Number(mInvoiceOnly[1]);
-      purchaseId = Number(mInvoiceOnly[2]);
-      invoiceNo = (mInvoiceOnly[3] || '').trim() || null;
-    } else if (mBasic) {
-      productId = Number(mBasic[1]);
-      purchaseId = Number(mBasic[2]);
-    }
     if (br.rows[0]) {
       productId = br.rows[0].product_id;
-      purchaseId = br.rows[0].purchase_id;
-      invoiceNo = (invoiceNo || br.rows[0].invoice_no || null);
+      invoiceNo = br.rows[0].invoice_no || null;
+      brandFromCode = br.rows[0].brand || null;
     }
 
     let pr = null as any;
-    if (purchaseId) {
-      const r = await pool.query(`SELECT purchase_id, vendor_id, invoice_no FROM purchases WHERE purchase_id = $1`, [purchaseId]);
-      pr = r.rows[0] || null;
-    }
-    if (!pr && invoiceNo) {
+    if (invoiceNo) {
       const r2 = await pool.query(`SELECT purchase_id, vendor_id, invoice_no FROM purchases WHERE invoice_no = $1 ORDER BY purchase_id DESC LIMIT 1`, [invoiceNo]);
       pr = r2.rows[0] || null;
-      purchaseId = pr?.purchase_id || purchaseId;
     }
     if (!pr) return res.status(404).send('Purchase not found');
     const vendorId = pr.vendor_id;
     const pi = await pool.query(`
-      SELECT unit_price, brand
+      SELECT unit_price, brand, selling_price
       FROM purchase_items
       WHERE purchase_id = $1 AND product_id = $2
       ORDER BY purchase_item_id DESC
       LIMIT 1
-    `, [purchaseId, productId]);
+    `, [pr.purchase_id, productId]);
     let unit = pi.rows[0]?.unit_price ? Number(pi.rows[0].unit_price) : null;
+    let sellingFromBatch = pi.rows[0]?.selling_price != null ? Number(pi.rows[0].selling_price) : null;
     let brand = brandFromCode ?? (pi.rows[0]?.brand || null);
     if (unit === null) {
       const last = await pool.query(`
@@ -143,7 +119,9 @@ router.get('/:barcode/pricing', async (req, res) => {
       const v1 = await pool.query(`SELECT name FROM vendors WHERE vendor_id = $1`, [vendorId]);
       vendorName = v1.rows[0]?.name || null;
     }
-    const selling = unit !== null ? (sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null;
+    const selling = sellingFromBatch != null
+      ? sellingFromBatch
+      : (unit !== null ? (sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null);
     res.json({
       inventory_id: inventoryId,
       product_name: productName,

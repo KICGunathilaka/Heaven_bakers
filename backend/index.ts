@@ -77,6 +77,14 @@ async function init() {
       UNIQUE(product_id, vendor_id, brand)
     )
     `);
+    // Deduplicate any accidental duplicates caused by NULL brand allowing multiple rows
+    await pool.query(`
+      DELETE FROM inventory_items i USING inventory_items j
+      WHERE i.inventory_id > j.inventory_id
+        AND i.product_id = j.product_id
+        AND i.vendor_id = j.vendor_id
+        AND (i.brand IS NOT DISTINCT FROM j.brand)
+    `);
     await pool.query(`
     CREATE TABLE IF NOT EXISTS customers (
       customer_id SERIAL PRIMARY KEY,
@@ -115,22 +123,35 @@ async function init() {
         invoice_no VARCHAR(100),
         vendor_id INT REFERENCES vendors(vendor_id),
         date TIMESTAMP DEFAULT NOW(),
-        bill_price NUMERIC(12,2) DEFAULT 0
+        bill_price NUMERIC(12,2) DEFAULT 0,
+        unit_price NUMERIC(10,2),
+        selling_price NUMERIC(10,2)
       )
     `);
+    await pool.query(`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS purchase_date DATE`);
+    await pool.query(`ALTER TABLE purchases ALTER COLUMN purchase_date TYPE DATE USING purchase_date::date`);
+    await pool.query(`UPDATE purchases SET purchase_date = date::date WHERE purchase_date IS NULL OR purchase_date IS DISTINCT FROM date::date`);
+    await pool.query(`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS unit_price NUMERIC(10,2)`);
+    await pool.query(`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS selling_price NUMERIC(10,2)`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS barcode (
         barcode_id SERIAL PRIMARY KEY,
         product_id INT REFERENCES products(product_id),
         invoice_no VARCHAR(100),
+        brand VARCHAR(100),
+        purchase_date DATE,
         barcode VARCHAR(200) UNIQUE NOT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
     await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS purchase_id INT`);
     await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS invoice_no VARCHAR(100)`);
+    await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS brand VARCHAR(100)`);
+    await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS purchase_date DATE`);
     await pool.query(`ALTER TABLE barcode DROP CONSTRAINT IF EXISTS fk_purchase`);
     await pool.query(`ALTER TABLE barcode ADD CONSTRAINT fk_purchase FOREIGN KEY (purchase_id) REFERENCES purchases(purchase_id) ON DELETE CASCADE`);
+    await pool.query(`ALTER TABLE barcode DROP COLUMN IF EXISTS purchase_id`);
+    await pool.query(`ALTER TABLE barcode DROP COLUMN IF EXISTS date`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS expenses (
         expense_id SERIAL PRIMARY KEY,
@@ -155,16 +176,21 @@ async function init() {
       )
     `);
     await pool.query(`
-    CREATE TABLE IF NOT EXISTS purchase_items (
-      purchase_item_id SERIAL PRIMARY KEY,
-      purchase_id INT REFERENCES purchases(purchase_id) ON DELETE CASCADE,
-      product_id INT REFERENCES products(product_id),
-      qty NUMERIC(12,2) NOT NULL,
-      total_price NUMERIC(12,2) NOT NULL,
-      unit_price NUMERIC(10,2) NOT NULL,
-      brand VARCHAR(100)
-    )
+      CREATE TABLE IF NOT EXISTS purchase_items (
+        purchase_item_id SERIAL PRIMARY KEY,
+        purchase_id INT REFERENCES purchases(purchase_id) ON DELETE CASCADE,
+        product_id INT REFERENCES products(product_id),
+        qty NUMERIC(12,2) NOT NULL,
+        total_price NUMERIC(12,2) NOT NULL,
+        unit_price NUMERIC(10,2) NOT NULL,
+        brand VARCHAR(100),
+        selling_price NUMERIC(10,2),
+        remaining_qty NUMERIC(12,2)
+      )
     `);
+    await pool.query(`ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS remaining_qty NUMERIC(12,2)`);
+    await pool.query(`ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS selling_price NUMERIC(10,2)`);
+    await pool.query(`UPDATE purchase_items SET remaining_qty = qty WHERE remaining_qty IS NULL`);
   } catch (e: any) {
     if (e?.message && /does not exist/i.test(e.message)) {
       const adminPool = new Pool({ connectionString: adminUrl.toString() });
@@ -244,22 +270,35 @@ async function init() {
           invoice_no VARCHAR(100),
           vendor_id INT REFERENCES vendors(vendor_id),
           date TIMESTAMP DEFAULT NOW(),
-          bill_price NUMERIC(12,2) DEFAULT 0
+          bill_price NUMERIC(12,2) DEFAULT 0,
+          unit_price NUMERIC(10,2),
+          selling_price NUMERIC(10,2)
         )
       `);
+      await pool.query(`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS purchase_date DATE`);
+      await pool.query(`ALTER TABLE purchases ALTER COLUMN purchase_date TYPE DATE USING purchase_date::date`);
+      await pool.query(`UPDATE purchases SET purchase_date = date::date WHERE purchase_date IS NULL OR purchase_date IS DISTINCT FROM date::date`);
+      await pool.query(`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS unit_price NUMERIC(10,2)`);
+      await pool.query(`ALTER TABLE purchases ADD COLUMN IF NOT EXISTS selling_price NUMERIC(10,2)`);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS barcode (
           barcode_id SERIAL PRIMARY KEY,
           product_id INT REFERENCES products(product_id),
           invoice_no VARCHAR(100),
+          brand VARCHAR(100),
+          purchase_date DATE,
           barcode VARCHAR(200) UNIQUE NOT NULL,
           created_at TIMESTAMP DEFAULT NOW()
         )
       `);
       await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS purchase_id INT`);
       await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS invoice_no VARCHAR(100)`);
+      await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS brand VARCHAR(100)`);
+      await pool.query(`ALTER TABLE barcode ADD COLUMN IF NOT EXISTS purchase_date DATE`);
       await pool.query(`ALTER TABLE barcode DROP CONSTRAINT IF EXISTS fk_purchase`);
       await pool.query(`ALTER TABLE barcode ADD CONSTRAINT fk_purchase FOREIGN KEY (purchase_id) REFERENCES purchases(purchase_id) ON DELETE CASCADE`);
+      await pool.query(`ALTER TABLE barcode DROP COLUMN IF EXISTS purchase_id`);
+      await pool.query(`ALTER TABLE barcode DROP COLUMN IF EXISTS date`);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS expenses (
           expense_id SERIAL PRIMARY KEY,
@@ -291,9 +330,14 @@ async function init() {
           qty NUMERIC(12,2) NOT NULL,
           total_price NUMERIC(12,2) NOT NULL,
           unit_price NUMERIC(10,2) NOT NULL,
-          brand VARCHAR(100)
+          brand VARCHAR(100),
+          selling_price NUMERIC(10,2),
+          remaining_qty NUMERIC(12,2)
         )
       `);
+      await pool.query(`ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS remaining_qty NUMERIC(12,2)`);
+      await pool.query(`ALTER TABLE purchase_items ADD COLUMN IF NOT EXISTS selling_price NUMERIC(10,2)`);
+      await pool.query(`UPDATE purchase_items SET remaining_qty = qty WHERE remaining_qty IS NULL`);
     } else {
       throw e;
     }
