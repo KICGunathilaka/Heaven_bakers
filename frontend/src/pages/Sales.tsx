@@ -23,10 +23,10 @@ export default function Sales() {
   const [date, setDate] = useState('');
   const [discount, setDiscount] = useState('');
   const [note, setNote] = useState('');
-  const [inventory, setInventory] = useState<Array<{ inventory_id: number; product_name: string | null; vendor_name: string | null; brand: string | null; sku: string | null; qty: number | string }>>([]);
+  const [inventory, setInventory] = useState<Array<{ inventory_id: number; product_id: number; product_name: string | null; vendor_name: string | null; brand: string | null; sku: string | null; qty: number | string; purchase_date: string | null }>>([]);
   const [error, setError] = useState('');
-  const [items, setItems] = useState<Array<{ inventory_id: number | null; invQuery: string; showSuggest: boolean; sku: string | null; qtyUnit: 'Grams' | 'KG' | 'PCS'; qty: string; brand: string; unitPrice: number | null; sellingPrice: number | null; barcode: string | null }>>([
-    { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null }
+  const [items, setItems] = useState<Array<{ inventory_id: number | null; invQuery: string; showSuggest: boolean; sku: string | null; qtyUnit: 'Grams' | 'KG' | 'PCS'; qty: string; brand: string; unitPrice: number | null; sellingPrice: number | null; barcode: string | null; purchase_date: string | null }>>([
+    { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null }
   ]);
   const [sales, setSales] = useState<Array<{ sale_id: number; sale_invoice_no: string | null; date: string; total_amount: number | null; discount: number | null; note: string | null; customer_name: string | null; items: Array<{ sales_item_id: number; inventory_id: number; qty: number; brand: string | null; unit_price: number | null; selling_price: number | null; profit: number | null }> }>>([]);
   const [fInvoice, setFInvoice] = useState('');
@@ -115,13 +115,19 @@ export default function Sales() {
   }, [navigate]);
 
   function filteredFor(q: string) {
-    const qq = q.toLowerCase();
+    const vv = (q || '').trim();
+    if (/^\d+(?:\s*,\s*\d+)*$/.test(vv)) {
+      const ids = vv.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+      const set = new Set(ids);
+      return inventory.filter(i => set.has(i.product_id));
+    }
+    const qq = vv.toLowerCase();
     return inventory.filter(i =>
       (i.product_name || '').toLowerCase().includes(qq)
       || (i.brand || '').toLowerCase().includes(qq)
       || (i.vendor_name || '').toLowerCase().includes(qq)
       || (i.sku || '').toLowerCase().includes(qq)
-      || String(i.inventory_id || '').includes(q)
+      || String(i.inventory_id || '').includes(vv)
     );
   }
 
@@ -129,17 +135,25 @@ export default function Sales() {
     return Math.ceil(n / 5) * 5;
   }
 
-  async function pickInventory(i: { inventory_id: number; product_name: string | null; brand: string | null; sku?: string | null }, row?: number) {
+  async function pickInventory(i: { inventory_id: number; product_name: string | null; brand: string | null; sku?: string | null; purchase_date?: string | null }, row?: number) {
     if (typeof row === 'number') {
       const sku = i.sku ?? null;
-      setItems(prev => prev.map((it, idx) => idx === row ? { ...it, inventory_id: i.inventory_id, invQuery: `${i.product_name || ''} ${i.brand ? `(${i.brand})` : ''}`.trim(), showSuggest: false, sku, qtyUnit: sku === 'Grams' ? 'Grams' : 'PCS' } : it));
+      setItems(prev => prev.map((it, idx) => {
+        if (idx !== row) return it;
+        const pd = i.purchase_date ? (() => { const d2 = new Date(i.purchase_date as string); return isNaN(d2.getTime()) ? String(i.purchase_date).slice(0,10) : d2.toLocaleDateString('en-CA'); })() : null;
+        return { ...it, inventory_id: i.inventory_id, invQuery: `${i.product_name || ''} ${i.brand ? `(${i.brand})` : ''}`.trim(), showSuggest: false, sku, qtyUnit: sku === 'Grams' ? 'Grams' : 'PCS', brand: i.brand || '', purchase_date: pd };
+      }));
       try {
-        const r = await get(`/inventory/${i.inventory_id}/unit-price`);
-        const u = r.unit_price ? Number(r.unit_price) : null;
+        const dLocal = i.purchase_date ? (() => { const d3 = new Date(i.purchase_date as string); return isNaN(d3.getTime()) ? String(i.purchase_date).slice(0,10) : d3.toLocaleDateString('en-CA'); })() : null;
+        const dateParam = dLocal ? `?date=${encodeURIComponent(dLocal)}` : '';
+        const brandParam = i.brand ? `${dateParam ? '&' : '?'}brand=${encodeURIComponent(i.brand)}` : '';
+        const r = await get(`/inventory/${i.inventory_id}/unit-price${dateParam}${brandParam}`);
+        const u = r.unit_price !== undefined && r.unit_price !== null ? Number(r.unit_price) : null;
+        const s = r.selling_price !== undefined && r.selling_price !== null ? Number(r.selling_price) : null;
         setItems(prev => prev.map((it, idx) => {
           if (idx !== row) return it;
           const isGrams = sku === 'Grams';
-          const perUnitSell = u !== null ? (isGrams ? Number((u * 1.3).toFixed(2)) : roundUpToNearest5(u * 1.3)) : null;
+          const perUnitSell = s !== null ? s : (u !== null ? (isGrams ? Number((u * 1.3).toFixed(2)) : roundUpToNearest5(u * 1.3)) : null);
           return { ...it, unitPrice: u, sellingPrice: perUnitSell };
         }));
       } catch {}
@@ -166,7 +180,7 @@ export default function Sales() {
           if (it.barcode) {
             return { barcode: it.barcode, qty: effectiveQty };
           }
-          return { inventory_id: it.inventory_id, qty: effectiveQty, brand: it.brand || undefined };
+          return { inventory_id: it.inventory_id, qty: effectiveQty, brand: it.brand || undefined, purchase_date: it.purchase_date || undefined };
         })
       };
       await post('/sales', payload);
@@ -202,7 +216,7 @@ export default function Sales() {
         }
         setSales(Object.values(map));
       } catch {}
-      setInvoiceNo(''); setCustomerName(''); setContactNo(''); setAddress(''); setDate(''); setDiscount(''); setNote(''); setItems([{ inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null }]); setShowForm(false);
+      setInvoiceNo(''); setCustomerName(''); setContactNo(''); setAddress(''); setDate(''); setDiscount(''); setNote(''); setItems([{ inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null }]); setShowForm(false);
       try { localStorage.removeItem('sales_form_cache'); } catch {}
     } catch (err: any) {
       if (err?.status === 401) { localStorage.removeItem('token'); navigate('/login', { replace: true }); return; }
@@ -306,7 +320,7 @@ export default function Sales() {
               <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontWeight: 600, color: roseGold }}>Products</div>
-                  <button type="button" onClick={() => setItems(prev => [...prev, { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null }])} style={{ background: gold, color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>Add Product</button>
+                  <button type="button" onClick={() => setItems(prev => [...prev, { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null }])} style={{ background: gold, color: '#fff', border: 'none', padding: '6px 12px', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')} onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>Add Product</button>
                 </div>
                 {items.map((it, idx) => (
                   <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: 8, alignItems: 'flex-end', marginBottom: 8 }}>
@@ -324,9 +338,9 @@ export default function Sales() {
                         />
                         {it.showSuggest && it.invQuery && filteredFor(it.invQuery).length > 0 && (
                           <div style={{ position: 'absolute', left: 0, right: 0, top: '100%', background: '#fff', border: `1px solid ${roseGoldLight}`, borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.08)', zIndex: 10, maxHeight: 180, overflowY: 'auto' }}>
-                            {filteredFor(it.invQuery).map(i => (
-                              <div key={i.inventory_id} onMouseDown={()=>pickInventory({ inventory_id: i.inventory_id, product_name: i.product_name, brand: i.brand, sku: i.sku }, idx)} style={{ padding: '8px 12px', cursor: 'pointer' }} onMouseEnter={e=>{ e.currentTarget.style.background = '#f7f1f2'; }} onMouseLeave={e=>{ e.currentTarget.style.background = '#fff'; }}>
-                                {(i.product_name || 'Unknown')} {i.brand ? `(${i.brand})` : ''}{i.sku ? ` — ${i.sku}` : ''} {i.vendor_name ? ` — ${i.vendor_name}` : ''}  [ID: {i.inventory_id}]
+                    {filteredFor(it.invQuery).map(i => (
+                              <div key={i.inventory_id} onMouseDown={()=>pickInventory({ inventory_id: i.inventory_id, product_name: i.product_name, brand: i.brand, sku: i.sku, purchase_date: i.purchase_date || null }, idx)} style={{ padding: '8px 12px', cursor: 'pointer' }} onMouseEnter={e=>{ e.currentTarget.style.background = '#f7f1f2'; }} onMouseLeave={e=>{ e.currentTarget.style.background = '#fff'; }}>
+                                {(i.product_name || 'Unknown')}{i.brand ? ` (${i.brand})` : ''}{i.purchase_date ? ` (Purchased: ${(() => { const d = new Date(i.purchase_date as string); return isNaN(d.getTime()) ? String(i.purchase_date).slice(0,10) : d.toLocaleDateString('en-CA'); })()})` : ''}
                               </div>
                             ))}
                           </div>

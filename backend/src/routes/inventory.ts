@@ -17,11 +17,24 @@ router.get('/', async (req, res) => {
   if (!requireAuth(req, res)) return;
   try {
     const r = await pool.query(
-      `SELECT i.inventory_id, i.product_id, p.product_name, p.sku, i.vendor_id, v.name as vendor_name, i.brand, i.qty
-       FROM inventory_items i
-       LEFT JOIN products p ON p.product_id = i.product_id
-       LEFT JOIN vendors v ON v.vendor_id = i.vendor_id
-       ORDER BY i.inventory_id DESC`
+      `SELECT
+         pi.purchase_item_id,
+         i.inventory_id,
+         pi.product_id,
+         p.product_name,
+         p.sku,
+         pr.vendor_id,
+         v.name AS vendor_name,
+         pi.brand,
+         COALESCE(pi.remaining_qty, 0) AS qty,
+         pr.purchase_date::date AS purchase_date
+       FROM purchase_items pi
+       JOIN purchases pr ON pr.purchase_id = pi.purchase_id
+       LEFT JOIN inventory_items i ON i.product_id = pi.product_id AND i.vendor_id = pr.vendor_id AND (i.brand IS NOT DISTINCT FROM pi.brand)
+       LEFT JOIN products p ON p.product_id = pi.product_id
+       LEFT JOIN vendors v ON v.vendor_id = pr.vendor_id
+       WHERE COALESCE(pi.remaining_qty, 0) > 0
+       ORDER BY pr.purchase_date::date DESC, pi.purchase_item_id DESC`
     );
     res.json({ inventory: r.rows });
   } catch (e: any) {
@@ -35,19 +48,25 @@ router.post('/rebuild', async (req, res) => {
   try {
     await client.query('BEGIN');
     const agg = await client.query(
-      `SELECT i.product_id, p.vendor_id, i.brand, SUM(i.qty)::NUMERIC(12,2) AS qty
+      `SELECT i.product_id, p.vendor_id, i.brand, COALESCE(SUM(i.remaining_qty), 0)::NUMERIC(12,2) AS qty
        FROM purchase_items i
        JOIN purchases p ON p.purchase_id = i.purchase_id
        GROUP BY i.product_id, p.vendor_id, i.brand`
     );
     for (const row of agg.rows) {
-      await client.query(
-        `INSERT INTO inventory_items (product_id, vendor_id, brand, qty)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (product_id, vendor_id, brand)
-         DO UPDATE SET qty = EXCLUDED.qty`,
-        [row.product_id, row.vendor_id, row.brand, row.qty]
+      const ex = await client.query(
+        `SELECT inventory_id FROM inventory_items WHERE product_id = $1 AND vendor_id = $2 AND (brand IS NOT DISTINCT FROM $3) LIMIT 1`,
+        [row.product_id, row.vendor_id, row.brand]
       );
+      if (ex.rows[0]) {
+        await client.query(`UPDATE inventory_items SET qty = $1 WHERE inventory_id = $2`, [row.qty, ex.rows[0].inventory_id]);
+      } else {
+        await client.query(
+          `INSERT INTO inventory_items (product_id, vendor_id, brand, qty)
+           VALUES ($1, $2, $3, $4)`,
+          [row.product_id, row.vendor_id, row.brand, row.qty]
+        );
+      }
     }
     await client.query('COMMIT');
     res.json({ ok: true, updated: agg.rowCount });
@@ -62,21 +81,39 @@ router.post('/rebuild', async (req, res) => {
 router.get('/:id/unit-price', async (req, res) => {
   if (!requireAuth(req, res)) return;
   const id = Number(req.params.id);
+  const dateFilter = typeof req.query.date === 'string' ? String(req.query.date) : null;
+  const brandOverride = typeof req.query.brand === 'string' ? String(req.query.brand) : null;
   try {
     const inv = await pool.query(`SELECT inventory_id, product_id, vendor_id, brand FROM inventory_items WHERE inventory_id = $1`, [id]);
     if (!inv.rows[0]) { res.status(404).send('Not found'); return; }
     const ip = inv.rows[0];
-    const r = await pool.query(
-      `SELECT pi.unit_price
+    const overrideTrim = (brandOverride || '').trim();
+    const brandToUse = overrideTrim.length > 0 ? overrideTrim : ip.brand;
+    let r = await pool.query(
+      `SELECT pi.unit_price, pi.selling_price
        FROM purchase_items pi
        JOIN purchases p ON p.purchase_id = pi.purchase_id
        WHERE pi.product_id = $1 AND p.vendor_id = $2 AND (pi.brand IS NOT DISTINCT FROM $3)
+          ${dateFilter ? 'AND p.purchase_date = $4' : ''}
        ORDER BY pi.purchase_item_id DESC
        LIMIT 1`,
-      [ip.product_id, ip.vendor_id, ip.brand]
+      dateFilter ? [ip.product_id, ip.vendor_id, brandToUse, dateFilter.slice(0,10)] : [ip.product_id, ip.vendor_id, brandToUse]
     );
+    if (!r.rows[0]) {
+      r = await pool.query(
+        `SELECT pi.unit_price, pi.selling_price
+         FROM purchase_items pi
+         JOIN purchases p ON p.purchase_id = pi.purchase_id
+         WHERE pi.product_id = $1 AND p.vendor_id = $2
+           ${dateFilter ? 'AND p.purchase_date = $3' : ''}
+         ORDER BY pi.purchase_item_id DESC
+         LIMIT 1`,
+        dateFilter ? [ip.product_id, ip.vendor_id, dateFilter.slice(0,10)] : [ip.product_id, ip.vendor_id]
+      );
+    }
     const unit = r.rows[0]?.unit_price ? Number(r.rows[0].unit_price) : null;
-    res.json({ unit_price: unit });
+    const selling = r.rows[0]?.selling_price != null ? Number(r.rows[0].selling_price) : null;
+    res.json({ unit_price: unit, selling_price: selling });
   } catch (e: any) {
     res.status(500).send(e?.message || 'Server error');
   }
