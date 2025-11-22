@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { get, post } from '../services/api';
 
 const roseGold = '#b76e79';
@@ -40,6 +40,93 @@ export default function Sales() {
   const [fBrand, setFBrand] = useState('');
   const [fTotalMin, setFTotalMin] = useState('');
   const [fTotalMax, setFTotalMax] = useState('');
+
+  const invRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const qtyRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const unitRefs = useRef<Array<HTMLSelectElement | null>>([]);
+  const brandRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const invoiceRef = useRef<HTMLInputElement | null>(null);
+  const dateRef = useRef<HTMLInputElement | null>(null);
+  const customerRef = useRef<HTMLInputElement | null>(null);
+  const contactRef = useRef<HTMLInputElement | null>(null);
+  const addressRef = useRef<HTMLInputElement | null>(null);
+  const discountRef = useRef<HTMLInputElement | null>(null);
+  const noteRef = useRef<HTMLInputElement | null>(null);
+
+  function focusField(row: number, field: 'inv'|'qty'|'unit'|'brand') {
+    if (field === 'inv') { const el = invRefs.current[row]; if (el) el.focus(); }
+    else if (field === 'qty') { const el = qtyRefs.current[row]; if (el) el.focus(); }
+    else if (field === 'unit') { const el = unitRefs.current[row]; if (el) el.focus(); }
+    else { const el = brandRefs.current[row]; if (el) el.focus(); }
+  }
+
+  function keyOrder() {
+    const arr: string[] = ['invoice','date','customer','contact','address'];
+    for (let i = 0; i < items.length; i++) {
+      arr.push(`inv-${i}`, `qty-${i}`, `unit-${i}`, `brand-${i}`);
+    }
+    arr.push('discount','note');
+    return arr;
+  }
+
+  function focusByKey(k: string) {
+    if (k === 'invoice') { const el = invoiceRef.current; if (el) el.focus(); return; }
+    if (k === 'date') { const el = dateRef.current; if (el) el.focus(); return; }
+    if (k === 'customer') { const el = customerRef.current; if (el) el.focus(); return; }
+    if (k === 'contact') { const el = contactRef.current; if (el) el.focus(); return; }
+    if (k === 'address') { const el = addressRef.current; if (el) el.focus(); return; }
+    if (k === 'discount') { const el = discountRef.current; if (el) el.focus(); return; }
+    if (k === 'note') { const el = noteRef.current; if (el) el.focus(); return; }
+    const m = /^(inv|qty|unit|brand)-(\d+)$/.exec(k);
+    if (m) {
+      const field = m[1] as 'inv'|'qty'|'unit'|'brand';
+      const row = Number(m[2]);
+      focusField(row, field);
+    }
+  }
+
+  function handleNavKey(e: React.KeyboardEvent, currentKey: string) {
+    const key = e.key;
+    if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'ArrowUp' && key !== 'ArrowDown') return;
+    e.preventDefault();
+    const order = keyOrder();
+    const idx = order.indexOf(currentKey);
+    if (idx === -1) return;
+    if (key === 'ArrowRight' || key === 'ArrowDown') {
+      const next = Math.min(idx + 1, order.length - 1);
+      focusByKey(order[next]);
+    } else {
+      const prev = Math.max(idx - 1, 0);
+      focusByKey(order[prev]);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent, row: number, field: 'inv'|'qty'|'unit'|'brand') {
+    const key = e.key;
+    if (key === 'Enter') {
+      e.preventDefault();
+      if (field === 'inv') {
+        const it = items[row];
+        const list = (it && it.invQuery) ? filteredFor(it.invQuery) : [];
+        if (list && list[0]) {
+          pickInventory({ inventory_id: list[0].inventory_id, product_name: list[0].product_name, brand: list[0].brand, sku: list[0].sku, purchase_date: list[0].purchase_date || null }, row);
+          setTimeout(() => focusField(row, 'qty'), 0);
+        } else {
+          focusField(row, 'qty');
+        }
+      } else if (field === 'qty' || field === 'unit') {
+        focusField(row, 'brand');
+      } else if (field === 'brand') {
+        setItems(prev => {
+          const next = [...prev, { inventory_id: null, invQuery: '', showSuggest: false, sku: null, qtyUnit: 'PCS' as 'PCS', qty: '', brand: '', unitPrice: null, sellingPrice: null, barcode: null, purchase_date: null, availableQty: null }];
+          setTimeout(() => focusField(prev.length, 'inv'), 0);
+          return next;
+        });
+      }
+      return;
+    }
+    handleNavKey(e, `${field}-${row}`);
+  }
 
   useEffect(() => {
     try {
@@ -327,23 +414,23 @@ export default function Sales() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Invoice No</label>
-                <input value={invoiceNo} onChange={e=>setInvoiceNo(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                <input value={invoiceNo} onChange={e=>setInvoiceNo(e.target.value)} onKeyDown={e=>handleNavKey(e,'invoice')} ref={invoiceRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Date</label>
-                <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                <input type="date" value={date} onChange={e=>setDate(e.target.value)} onKeyDown={e=>handleNavKey(e,'date')} ref={dateRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Customer Name</label>
-                <input value={customerName} onChange={e=>setCustomerName(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                <input value={customerName} onChange={e=>setCustomerName(e.target.value)} onKeyDown={e=>handleNavKey(e,'customer')} ref={customerRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Contact No</label>
-                <input value={contactNo} onChange={e=>setContactNo(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                <input value={contactNo} onChange={e=>setContactNo(e.target.value)} onKeyDown={e=>handleNavKey(e,'contact')} ref={contactRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
               <div style={{ gridColumn: 'span 2', marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Address</label>
-                <input value={address} onChange={e=>setAddress(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                <input value={address} onChange={e=>setAddress(e.target.value)} onKeyDown={e=>handleNavKey(e,'address')} ref={addressRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -359,6 +446,8 @@ export default function Sales() {
                           placeholder="Search product, brand, SKU, or ID"
                           value={it.invQuery}
                           onChange={async e=>{ const v = e.target.value; setItems(prev => prev.map((x, i) => i === idx ? { ...x, invQuery: v, showSuggest: true } : x)); const vv = v.trim(); if (vv.toUpperCase().startsWith('BC-')) { try { const r = await get(`/barcode/${encodeURIComponent(vv)}/pricing`); if (r?.inventory_id) { await pickInventory({ inventory_id: r.inventory_id, product_name: r.product_name, brand: r.brand, sku: r.sku }, idx); } const unit = (r?.unit_price !== undefined && r?.unit_price !== null) ? Number(r.unit_price) : null; const sell = (r?.selling_price !== undefined && r?.selling_price !== null) ? Number(r.selling_price) : (unit !== null ? (r.sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null); const match = r?.inventory_id ? inventory.find(rr => rr.inventory_id === r.inventory_id) : null; const availQty = match ? Number(match.qty as any) : null; setItems(prev => prev.map((x, i) => i === idx ? { ...x, inventory_id: (r.inventory_id ?? x.inventory_id ?? null), invQuery: `${r.product_name || ''}${(r.brand || x.brand) ? ` (${r.brand || x.brand})` : ''}`.trim(), showSuggest: false, sku: r.sku || x.sku || null, qtyUnit: ((r.sku || x.sku) === 'Grams' ? 'Grams' : 'PCS'), brand: r.brand || x.brand || '', unitPrice: unit ?? x.unitPrice ?? null, sellingPrice: sell ?? x.sellingPrice ?? null, barcode: vv, purchase_date: (r.purchase_date ? String(r.purchase_date).slice(0,10) : (x.purchase_date ?? null)), availableQty: (availQty !== null && !isNaN(availQty)) ? availQty : (x.availableQty ?? null) } : x)); } catch {} } }}
+                          onKeyDown={e => { handleNavKey(e, `inv-${idx}`); handleKeyDown(e, idx, 'inv'); }}
+                          ref={el => { invRefs.current[idx] = el }}
                           onPaste={async e=>{ e.preventDefault(); e.stopPropagation(); const text = (e.clipboardData?.getData('text') || '').trim(); if (text && text.toUpperCase().startsWith('BC-')) { try { const r = await get(`/barcode/${encodeURIComponent(text)}/pricing`); if (r?.inventory_id) { await pickInventory({ inventory_id: r.inventory_id, product_name: r.product_name, brand: r.brand, sku: r.sku }, idx); } const unit = (r?.unit_price !== undefined && r?.unit_price !== null) ? Number(r.unit_price) : null; const sell = (r?.selling_price !== undefined && r?.selling_price !== null) ? Number(r.selling_price) : (unit !== null ? (r.sku === 'Grams' ? Number((unit * 1.3).toFixed(2)) : Math.ceil((unit * 1.3) / 5) * 5) : null); const match = r?.inventory_id ? inventory.find(rr => rr.inventory_id === r.inventory_id) : null; const availQty = match ? Number(match.qty as any) : null; setItems(prev => prev.map((x, i) => i === idx ? { ...x, inventory_id: (r.inventory_id ?? x.inventory_id ?? null), invQuery: `${r.product_name || ''}${(r.brand || x.brand) ? ` (${r.brand || x.brand})` : ''}`.trim(), showSuggest: false, sku: r.sku || x.sku || null, qtyUnit: ((r.sku || x.sku) === 'Grams' ? 'Grams' : 'PCS'), brand: r.brand || x.brand || '', unitPrice: unit ?? x.unitPrice ?? null, sellingPrice: sell ?? x.sellingPrice ?? null, barcode: text, purchase_date: (r.purchase_date ? String(r.purchase_date).slice(0,10) : (x.purchase_date ?? null)), availableQty: (availQty !== null && !isNaN(availQty)) ? availQty : (x.availableQty ?? null) } : x)); } catch {} } }}
                           onFocus={()=>setItems(prev => prev.map((x, i) => i === idx ? { ...x, showSuggest: true } : x))}
                           onBlur={()=>setTimeout(()=>setItems(prev => prev.map((x, i) => i === idx ? { ...x, showSuggest: false } : x)), 150)}
@@ -378,10 +467,12 @@ export default function Sales() {
                     <div>
                       <label style={{ display: 'block', marginBottom: 6 }}>Qty {it.sku ? `(${it.sku})` : ''}</label>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <input type="number" step={(it.sku || '') === 'PCS' ? 1 : 0.01} value={it.qty} onChange={e=>{ const vStr = e.target.value; const vNum = Number(vStr || 0); const avail = it.availableQty ?? null; let nextQtyStr = vStr; if (!isNaN(vNum) && avail !== null && !isNaN(avail)) { if ((it.sku || '') === 'Grams') { const eff = it.qtyUnit === 'KG' ? vNum * 1000 : vNum; const clampedEff = Math.min(eff, avail); nextQtyStr = it.qtyUnit === 'KG' ? String(clampedEff / 1000) : String(clampedEff); } else { const clamped = Math.min(vNum, avail); nextQtyStr = String(clamped); } } setItems(prev => prev.map((x, i) => i === idx ? { ...x, qty: nextQtyStr } : x)); }} max={(() => { const avail = it.availableQty ?? null; if (avail === null || isNaN(avail)) return undefined; if ((it.sku || '') === 'Grams') { return it.qtyUnit === 'KG' ? Number((avail / 1000).toFixed(3)) : avail; } return avail; })()} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                        <input type="number" step={(it.sku || '') === 'PCS' ? 1 : 0.01} value={it.qty} onChange={e=>{ const vStr = e.target.value; const vNum = Number(vStr || 0); const avail = it.availableQty ?? null; let nextQtyStr = vStr; if (!isNaN(vNum) && avail !== null && !isNaN(avail)) { if ((it.sku || '') === 'Grams') { const eff = it.qtyUnit === 'KG' ? vNum * 1000 : vNum; const clampedEff = Math.min(eff, avail); nextQtyStr = it.qtyUnit === 'KG' ? String(clampedEff / 1000) : String(clampedEff); } else { const clamped = Math.min(vNum, avail); nextQtyStr = String(clamped); } } setItems(prev => prev.map((x, i) => i === idx ? { ...x, qty: nextQtyStr } : x)); }} max={(() => { const avail = it.availableQty ?? null; if (avail === null || isNaN(avail)) return undefined; if ((it.sku || '') === 'Grams') { return it.qtyUnit === 'KG' ? Number((avail / 1000).toFixed(3)) : avail; } return avail; })()} onKeyDown={e => { handleNavKey(e, `qty-${idx}`); handleKeyDown(e, idx, 'qty'); }} ref={el => { qtyRefs.current[idx] = el }} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
                         <select
                           value={it.qtyUnit}
                           onChange={e=>{ const v = e.target.value as any; setItems(prev => prev.map((x, i) => { if (i !== idx) return x; const curNum = Number(x.qty || 0); if ((x.sku || '') === 'Grams') { const eff = x.qtyUnit === 'KG' ? curNum * 1000 : curNum; const nextQty = v === 'KG' ? eff / 1000 : eff; const avail = x.availableQty ?? null; const clampedEff = (avail !== null && !isNaN(avail)) ? Math.min(eff, avail) : eff; const nextQtyClamped = v === 'KG' ? clampedEff / 1000 : clampedEff; return { ...x, qtyUnit: v, qty: String(nextQtyClamped) }; } return { ...x, qtyUnit: v }; })); }}
+                          onKeyDown={e => { handleNavKey(e, `unit-${idx}`); handleKeyDown(e, idx, 'unit'); }}
+                          ref={el => { unitRefs.current[idx] = el }}
                           style={{ width: 120, padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#fff' }}
                           disabled={it.sku !== 'Grams'}
                         >
@@ -398,7 +489,7 @@ export default function Sales() {
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 6 }}>Brand</label>
-                      <input value={it.brand} onChange={e=>{ const v = e.target.value; setItems(prev => prev.map((x, i) => i === idx ? { ...x, brand: v } : x)); }} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                      <input value={it.brand} onChange={e=>{ const v = e.target.value; setItems(prev => prev.map((x, i) => i === idx ? { ...x, brand: v } : x)); }} onKeyDown={e => { handleNavKey(e, `brand-${idx}`); handleKeyDown(e, idx, 'brand'); }} ref={el => { brandRefs.current[idx] = el }} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
                     </div>
                     <div>
                       <label style={{ display: 'block', marginBottom: 6 }}>Unit Price</label>
@@ -436,12 +527,12 @@ export default function Sales() {
                 </div>
                 <div style={{ marginBottom: 12 }}>
                   <label style={{ display: 'block', marginBottom: 6 }}>Discount (%)</label>
-                  <input type="number" step="0.01" min={0} max={100} value={discount} onChange={e=>setDiscount(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                  <input type="number" step="0.01" min={0} max={100} value={discount} onChange={e=>setDiscount(e.target.value)} onKeyDown={e=>handleNavKey(e,'discount')} ref={discountRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ gridColumn: '1 / -1', marginTop: 4, marginBottom: 12 }}>
                 <label style={{ display: 'block', marginBottom: 6 }}>Note</label>
-                <input value={note} onChange={e=>setNote(e.target.value)} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
+                <input value={note} onChange={e=>setNote(e.target.value)} onKeyDown={e=>handleNavKey(e,'note')} ref={noteRef} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', boxSizing: 'border-box' }} />
               </div>
             </div>
             <div style={{ marginTop: 12 }}>

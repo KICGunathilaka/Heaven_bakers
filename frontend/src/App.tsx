@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -19,8 +20,18 @@ function Protected({ children }: { children: JSX.Element }) {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<'light'|'dark'>(() => (localStorage.getItem('theme') === 'dark' ? 'dark' : 'light'));
+  useEffect(() => {
+    function onThemeChange(e: any) {
+      const m = e?.detail === 'dark' ? 'dark' : 'light';
+      setTheme(m);
+    }
+    window.addEventListener('theme-change', onThemeChange as any);
+    return () => window.removeEventListener('theme-change', onThemeChange as any);
+  }, []);
+  const bg = theme === 'dark' ? 'linear-gradient(135deg, #0f0f0f, #1a1a1a)' : 'linear-gradient(135deg, #ffe3ea, #ffffff)';
   return (
-    <div style={{ background: 'linear-gradient(135deg, #e9e9e9, #dcdcdc)', minHeight: '100vh' }}>
+    <div style={{ background: bg, minHeight: '100vh' }}>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
